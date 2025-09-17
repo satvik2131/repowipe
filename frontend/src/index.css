@@ -1,0 +1,65 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* RepoWipe Design System - Dark theme with blue accents */
+
+@layer base {
+  :root {
+    --background: 217 33% 9%; /* #111827 - Dark background */
+    --foreground: 237 50% 90%; /* #e0e7ff - Light text */
+
+    --card: 217 33% 9%;
+    --card-foreground: 237 50% 90%;
+
+    --popover: 217 33% 9%;
+    --popover-foreground: 237 50% 90%;
+
+    --primary: 217 91% 60%; /* #3b82f6 - Blue primary */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 24% 16%; /* #1f2937 - Secondary dark */
+    --secondary-foreground: 237 50% 90%;
+
+    --muted: 210 24% 16%;
+    --muted-foreground: 213 19% 65%; /* #a7b4c7 - Muted text */
+
+    --accent: 213 93% 68%; /* #60a5fa - Accent blue */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.5rem;
+
+    /* Hero gradient */
+    --gradient-hero: linear-gradient(180deg, hsl(217 33% 9%), hsl(210 24% 16%));
+
+    /* Shadows */
+    --shadow-elegant: 0 25px 50px -12px hsl(217 91% 60% / 0.25);
+    --shadow-card: 0 10px 25px -3px hsl(0 0% 0% / 0.3);
+
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-space;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
