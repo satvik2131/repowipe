@@ -15,6 +15,7 @@ const (
 	AccessTokenUrl = "https://github.com/login/oauth/access_token"
 	Redirect_Uri = "http://localhost:3000/auth/"
 	SearchUri = "https://api.github.com/search/repositories"
+	DeleteApi = "https://api.github.com/repos/"
  )
 
 

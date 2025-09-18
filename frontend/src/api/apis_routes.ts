@@ -42,8 +42,8 @@ const validateUser = async () => {
   return resp?.data;
 };
 
-const listAllRepos = async () => {
-  const resp = await axiosClient.post("/fetch/repos");
+const listAllRepos = async (page: number) => {
+  const resp = await axiosClient.post(`/fetch/repos?page=${page}`);
   return resp;
 };
 

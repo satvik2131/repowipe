@@ -22,7 +22,7 @@ export const Header = () => {
     const client_id: string = import.meta.env.VITE_CLIENT_ID;
     const state: string = import.meta.env.VITE_GITHUB_SECRET;
     const redirect_url: string = import.meta.env.VITE_REDIRECT_URL;
-    const scope: string = "repo,user";
+    const scope: string = "repo,user,delete_repo";
 
     window.location.href = `${git_redirect_url}?client_id=${client_id}&redirect_uri=${redirect_url}&scope=${scope}&state=${state}`;
   };

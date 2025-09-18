@@ -13,5 +13,6 @@ func Router(r *gin.Engine){
 		base.POST("/set/access/token",controllers.SetAccessToken)
 		base.POST("/fetch/repos",controllers.FetchAllRepos)
 		base.GET("/search/repo",controllers.SearchRepos)
+		base.DELETE("/delete/repos",controllers.DeleteRepos)
 	}
 }

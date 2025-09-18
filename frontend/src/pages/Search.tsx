@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -31,34 +31,39 @@ const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRepos, setSelectedRepos] = useState<number[]>([]);
   const { toast } = useToast();
-  const { fetchRepos, findRepos, allRepos, searchedRepos } = useAppStore(
+  const {
+    fetchRepos,
+    findRepos,
+    repoCount,
+    allRepos,
+    page,
+    setPage,
+    searchedRepos,
+  } = useAppStore(
     useShallow((state) => ({
       fetchRepos: state.fetchRepos,
       findRepos: state.findRepos,
+      setPage: state.setPage,
       searchedRepos: state.searchedRepos,
       allRepos: state.allRepos,
       repoCount: state.user.public_repos + state.user.total_private_repos,
+      page: state.page,
     }))
   );
-  const timer = useRef<NodeJS.Timeout | null>(null);
-  const repos: Repos[] | null =
-    searchTerm.length !== 0 ? searchedRepos : allRepos;
 
   //Count the pages for number of repositories
   const paginationCount = Math.ceil(repoCount / 10);
 
-  //Fetched all Repositories
+  //Fetched all Repositories if it is empty
   useEffect(() => {
     fetchRepos();
-  }, []);
+  }, [page]);
 
-  console.log("all Repo--", allRepos);
-  console.log("searched repo--", searchedRepos);
-  console.log("search term--", searchTerm);
-
+  const repos = searchTerm.length === 0 ? allRepos : searchedRepos; // conditionally change section for search results
   //Search the repos and updates the repos state (with debouncing)
+  const timer = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
-    if (searchTerm === "") return;
+    if (searchTerm.length === 0) return;
 
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
@@ -70,6 +75,7 @@ const Search = () => {
     };
   }, [searchTerm]);
 
+  //Handles deletion of repository
   const handleSelectRepo = (repoId: number) => {
     setSelectedRepos((prev) =>
       prev.includes(repoId)
@@ -86,24 +92,28 @@ const Search = () => {
     }
   };
 
-  // const handleBulkDelete = () => {
-  //   if (selectedRepos.length === 0) {
-  //     toast({
-  //       title: "No repos selected",
-  //       description: "Please select at least one repository to delete.",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
+  const handlePageChange = (currentPage: number) => {
+    setPage(currentPage);
+  };
 
-  //   toast({
-  //     title: "Bulk deletion initiated",
-  //     description: `${selectedRepos.length} repos will be deleted. This is a demo - no actual deletion occurred.`,
-  //   });
+  const handleBulkDelete = () => {
+    if (selectedRepos.length === 0) {
+      toast({
+        title: "No repos selected",
+        description: "Please select at least one repository to delete.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  //   // In a real app, this would make API calls to delete repos
-  //   setSelectedRepos([]);
-  // };
+    toast({
+      title: "Bulk deletion initiated",
+      description: `${selectedRepos.length} repos will be deleted. This is a demo - no actual deletion occurred.`,
+    });
+
+    // In a real app, this would make API calls to delete repos
+    setSelectedRepos([]);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -249,17 +259,37 @@ const Search = () => {
         <Pagination className="mt-5">
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious href="#" />
+              <PaginationPrevious
+                onClick={(e) => {
+                  e.preventDefault();
+                  handlePageChange(page - 1);
+                }}
+              />
             </PaginationItem>
             {Array.from({ length: paginationCount }).map((_, count) => {
+              const currPage = count + 1;
               return (
-                <PaginationItem key={count + 1}>
-                  <PaginationLink href="#">{count + 1}</PaginationLink>
+                <PaginationItem key={currPage}>
+                  <PaginationLink
+                    href="#"
+                    isActive={currPage === page}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(currPage);
+                    }}
+                  >
+                    {currPage}
+                  </PaginationLink>
                 </PaginationItem>
               );
             })}
             <PaginationItem>
-              <PaginationNext href="#" />
+              <PaginationNext
+                onClick={(e) => {
+                  e.preventDefault();
+                  handlePageChange(page + 1);
+                }}
+              />
             </PaginationItem>
           </PaginationContent>
         </Pagination>

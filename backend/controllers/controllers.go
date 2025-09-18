@@ -53,14 +53,16 @@ func SetAccessToken( c *gin.Context){
 }
 
 func FetchAllRepos (c *gin.Context){
+	page := c.Query("page")
 	sessionId,err := c.Cookie("session_id")
 	if err != nil{
 		c.JSON(http.StatusUnauthorized,nil)
+		return
 	}
 
 	accessToken := getToken(sessionId)
 	log.Println("access_token-=",accessToken)
-	services.FetchRepos(c,accessToken)
+	services.FetchRepos(c,accessToken,page)
 }
 
 
@@ -71,12 +73,20 @@ func SearchRepos (c *gin.Context){
 
 	if err != nil{
 		c.JSON(http.StatusUnauthorized,nil)
+		return
 	}
 	accessToken := getToken(sessionId)
 	services.SearchRepos(c,accessToken,username,reponame)
 }
 
 
+func DeleteRepos(c *gin.Context){
+		var deleteRepoData types.GithubRepoDelete
+		if err := c.ShouldBindJSON(&deleteRepoData); err != nil{
+			c.JSON(http.StatusBadRequest,nil)
+		}
+		services.DeleteRepos(c, deleteRepoData )
+}
 
 
 

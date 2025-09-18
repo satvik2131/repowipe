@@ -12,10 +12,10 @@ import (
 )
 
 //Repositories related services
-func FetchRepos (c *gin.Context,accessToken string)  {
+func FetchRepos (c *gin.Context,accessToken string,page string)  {
 	var repos types.GitHubRepoList
 	query := map[string]string{
-		"page":"1",
+		"page":page,
 		"per_page":"10",
 	}
 	_,err := utils.Client.R().
@@ -30,7 +30,15 @@ func FetchRepos (c *gin.Context,accessToken string)  {
 		return
 	}
 
+	
 	c.JSON(http.StatusOK,repos)
+}
+
+
+func DeleteRepos(c *gin.Context, deleteRepoData types.GithubRepoDelete){
+	utils.Client.R().
+	Delete(config.DeleteApi)
+
 }
 
 

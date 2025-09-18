@@ -45,3 +45,9 @@ type GitHubSearchResponse struct {
 
 // GitHubRepoList is just a slice of repos
 type GitHubRepoList []GitHubRepo
+
+
+type GithubRepoDelete struct{
+	RepoName []string `json:repo_name`
+	username string	  `json:username`
+}
