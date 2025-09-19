@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button, Input, Card, Badge, Checkbox } from "@/components/ui";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import {
   Pagination,
   PaginationContent,
@@ -26,10 +23,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAppStore } from "@/store/useAppStore";
 import { useShallow } from "zustand/react/shallow";
+import { deleteRepos } from "@/api/apis_routes";
 
 const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRepos, setSelectedRepos] = useState<number[]>([]);
+  const [selectedRepos, setSelectedRepos] = useState<string[]>([]);
+  const [showDialog, setShowDialog] = useState<boolean>(false);
   const { toast } = useToast();
   const {
     fetchRepos,
@@ -37,17 +36,21 @@ const Search = () => {
     repoCount,
     allRepos,
     page,
+    username,
     setPage,
     searchedRepos,
+    deleteRepos,
   } = useAppStore(
     useShallow((state) => ({
       fetchRepos: state.fetchRepos,
       findRepos: state.findRepos,
       setPage: state.setPage,
+      deleteRepos: state.deleteRepos,
       searchedRepos: state.searchedRepos,
       allRepos: state.allRepos,
       repoCount: state.user.public_repos + state.user.total_private_repos,
       page: state.page,
+      username: state.user.login,
     }))
   );
 
@@ -59,7 +62,7 @@ const Search = () => {
     fetchRepos();
   }, [page]);
 
-  const repos = searchTerm.length === 0 ? allRepos : searchedRepos; // conditionally change section for search results
+  const repos: Repos[] = searchTerm.length === 0 ? allRepos : searchedRepos; // conditionally change section for search results
   //Search the repos and updates the repos state (with debouncing)
   const timer = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
@@ -76,11 +79,11 @@ const Search = () => {
   }, [searchTerm]);
 
   //Handles deletion of repository
-  const handleSelectRepo = (repoId: number) => {
+  const handleSelectRepo = (repoName: string) => {
     setSelectedRepos((prev) =>
-      prev.includes(repoId)
-        ? prev.filter((id) => id !== repoId)
-        : [...prev, repoId]
+      prev.includes(repoName)
+        ? prev.filter((id) => id !== repoName)
+        : [...prev, repoName]
     );
   };
 
@@ -88,7 +91,7 @@ const Search = () => {
     if (selectedRepos.length === repos?.length) {
       setSelectedRepos([]);
     } else {
-      setSelectedRepos(repos.map((repo) => repo.id));
+      setSelectedRepos(repos.map((repo) => repo.name));
     }
   };
 
@@ -96,23 +99,45 @@ const Search = () => {
     setPage(currentPage);
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (selectedRepos.length === 0) {
       toast({
         title: "No repos selected",
         description: "Please select at least one repository to delete.",
         variant: "destructive",
       });
+
       return;
     }
 
-    toast({
-      title: "Bulk deletion initiated",
-      description: `${selectedRepos.length} repos will be deleted. This is a demo - no actual deletion occurred.`,
-    });
+    setShowDialog(true);
+  };
 
-    // In a real app, this would make API calls to delete repos
-    setSelectedRepos([]);
+  const onConfirm = () => {
+    const deleteReposData: DeleteRepoData = {
+      repos: selectedRepos,
+      username: username,
+    };
+    deleteRepos(deleteReposData)
+      .then((res) => {
+        console.log("res--".res);
+        if (res.status === 200) {
+          toast({
+            title: "Repositories Deleted",
+            description: `${selectedRepos.length} Repositories deleted`,
+            variant: "destructive",
+          });
+          fetchRepos();
+        }
+      })
+      .catch((err) => {
+        toast({
+          title: "Repos not deleted (Not Found)",
+          description: err.response.data,
+          variant: "destructive",
+        });
+      });
   };
 
   const formatDate = (dateString: string) => {
@@ -175,10 +200,16 @@ const Search = () => {
                 {selectedRepos.length} of {repos.length} selected
               </span>
             </div>
+
+            <ConfirmDialog
+              open={showDialog}
+              onOpenChange={setShowDialog}
+              onConfirm={onConfirm}
+            />
             <Button
               variant="destructive"
-              disabled={selectedRepos.length === 0}
               className="font-space"
+              onClick={handleBulkDelete}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete Selected ({selectedRepos.length})
@@ -206,8 +237,8 @@ const Search = () => {
                 >
                   <div className="flex items-start gap-4">
                     <Checkbox
-                      checked={selectedRepos.includes(repo.id)}
-                      onCheckedChange={() => handleSelectRepo(repo.id)}
+                      checked={selectedRepos.includes(repo.name)}
+                      onCheckedChange={() => handleSelectRepo(repo.name)}
                       className="mt-1"
                     />
 
@@ -262,7 +293,9 @@ const Search = () => {
               <PaginationPrevious
                 onClick={(e) => {
                   e.preventDefault();
-                  handlePageChange(page - 1);
+                  if (page - 1 > 0) {
+                    handlePageChange(page - 1);
+                  }
                 }}
               />
             </PaginationItem>
@@ -287,14 +320,15 @@ const Search = () => {
               <PaginationNext
                 onClick={(e) => {
                   e.preventDefault();
-                  handlePageChange(page + 1);
+                  if (page + 1 <= paginationCount) {
+                    handlePageChange(page + 1);
+                  }
                 }}
               />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
       </main>
-
       <Footer />
     </div>
   );

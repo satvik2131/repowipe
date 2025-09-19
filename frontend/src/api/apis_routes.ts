@@ -47,6 +47,16 @@ const listAllRepos = async (page: number) => {
   return resp;
 };
 
-// const deleteRepos = (){}
+const deleteRepos = async (deleteRepos: DeleteRepoData) => {
+  const resp = await axiosClient.delete("/delete/repos", {
+    data: deleteRepos,
+  });
+};
 
-export { authenticateUser, validateUser, listAllRepos, searchRepos };
+export {
+  authenticateUser,
+  validateUser,
+  listAllRepos,
+  searchRepos,
+  deleteRepos,
+};

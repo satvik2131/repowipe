@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -35,10 +36,24 @@ func FetchRepos (c *gin.Context,accessToken string,page string)  {
 }
 
 
-func DeleteRepos(c *gin.Context, deleteRepoData types.GithubRepoDelete){
-	utils.Client.R().
-	Delete(config.DeleteApi)
+func DeleteRepos(c *gin.Context, accessToken ,reponame, username string ) (error) {
+	resp,err := utils.Client.R().
+		SetHeader("Authorization", "Bearer " + accessToken ).
+		Delete(config.DeleteApi  + username +"/"+reponame )
+	
+	if err != nil {
+		c.JSON(http.StatusBadRequest,err)
+		return nil
+	}
 
+	//Repos Deleted
+	if resp.Status() != "404 Not Found"{
+		c.JSON(http.StatusOK,"Repos Deleted!")
+		return nil;
+	}
+
+	
+	return errors.New(reponame);
 }
 
 

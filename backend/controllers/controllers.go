@@ -81,11 +81,33 @@ func SearchRepos (c *gin.Context){
 
 
 func DeleteRepos(c *gin.Context){
+		sessionId,err := c.Cookie("session_id")
+		if(err != nil){
+			c.JSON(http.StatusUnauthorized,nil)
+		}
+
+		accessToken := getToken(sessionId)
+		var notFoundRepos []string
+
 		var deleteRepoData types.GithubRepoDelete
+		log.Println("REquest BODy",deleteRepoData)
 		if err := c.ShouldBindJSON(&deleteRepoData); err != nil{
+			log.Println("controller-del-repo: ",err.Error())
 			c.JSON(http.StatusBadRequest,nil)
 		}
-		services.DeleteRepos(c, deleteRepoData )
+		username := deleteRepoData.Username
+		for _,repo := range deleteRepoData.Repos{
+			err = services.DeleteRepos(c, accessToken ,repo, username)
+			if err != nil {
+				log.Println("repo not found",err.Error())
+				errorMsg := err.Error()
+				notFoundRepos = append(notFoundRepos,errorMsg)
+			}
+		}
+
+		if len(notFoundRepos) > 0 {
+			c.JSON(http.StatusNotFound, notFoundRepos)
+		}
 }
 
 

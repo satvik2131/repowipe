@@ -48,6 +48,6 @@ type GitHubRepoList []GitHubRepo
 
 
 type GithubRepoDelete struct{
-	RepoName []string `json:repo_name`
-	username string	  `json:username`
+	Repos []string `json:repos`
+	Username string	  `json:username`
 }

@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { validateUser, listAllRepos, searchRepos } from "@/api/apis_routes";
+import {
+  validateUser,
+  listAllRepos,
+  searchRepos,
+  deleteRepos,
+} from "@/api/apis_routes";
 import { AxiosResponse } from "axios";
 
 type AppState = {
@@ -17,6 +22,7 @@ type AppState = {
   setUser: (user: User | null) => void;
   fetchRepos: () => void;
   findRepos: (searchRepoName: string) => void;
+  deleteRepos: (repoData: DeleteRepoData) => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -54,6 +60,10 @@ export const useAppStore = create<AppState>()(
             return;
           }
         }
+      },
+      deleteRepos: async (repoData) => {
+        const resp = await deleteRepos(repoData);
+        return resp;
       },
       setIsAuthenticated: (auth) => set({ isAuthenticated: auth }),
       setUser: (user) => set({ user }),

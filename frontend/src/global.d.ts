@@ -19,3 +19,8 @@ declare type Repos =
       private: boolean;
     }
   | [];
+
+declare type DeleteRepoData = {
+  repos: string[];
+  username: string;
+};
