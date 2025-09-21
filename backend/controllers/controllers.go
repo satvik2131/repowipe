@@ -61,7 +61,6 @@ func FetchAllRepos (c *gin.Context){
 	}
 
 	accessToken := getToken(sessionId)
-	log.Println("access_token-=",accessToken)
 	services.FetchRepos(c,accessToken,page)
 }
 
@@ -90,7 +89,6 @@ func DeleteRepos(c *gin.Context){
 		var notFoundRepos []string
 
 		var deleteRepoData types.GithubRepoDelete
-		log.Println("REquest BODy",deleteRepoData)
 		if err := c.ShouldBindJSON(&deleteRepoData); err != nil{
 			log.Println("controller-del-repo: ",err.Error())
 			c.JSON(http.StatusBadRequest,nil)

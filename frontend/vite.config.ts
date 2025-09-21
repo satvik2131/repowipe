@@ -17,4 +17,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Add base path for assets when building
+  base: mode === "production" ? "/" : "/",
+  build: {
+    outDir: "../backend/static", // Build directly into the backend static folder
+    emptyOutDir: true,
+    assetsDir: "assets", // This ensures assets go into /assets/ folder
+  },
 }));

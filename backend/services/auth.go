@@ -60,7 +60,5 @@ func FetchUser(c *gin.Context, accessToken string) types.User {
 		return types.User{}
 	}
 
-	log.Println("user---",user)
-
 	return user
 }
