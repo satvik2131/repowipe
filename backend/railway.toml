@@ -1,8 +1,0 @@
-[build]
-buildCommand = "echo 'Using pre-built binary'"
-
-[deploy]
-startCommand = "./repowipe" 
-healthcheckPath = "/health"
-healthcheckTimeout = 100
-restartPolicyType = "on_failure"

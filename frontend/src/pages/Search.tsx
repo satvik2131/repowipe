@@ -60,7 +60,7 @@ const Search = () => {
   //Fetched all Repositories if it is empty
   useEffect(() => {
     fetchRepos();
-  }, [page]);
+  }, [page,repoCount]);
 
   const repos: Repos[] = searchTerm.length === 0 ? allRepos : searchedRepos; // conditionally change section for search results
   //Search the repos and updates the repos state (with debouncing)
@@ -121,19 +121,20 @@ const Search = () => {
     };
     deleteRepos(deleteReposData)
       .then((res) => {
-        console.log("res--".res);
+        console.log("res--",res);
         if (res.status === 200) {
           toast({
             title: "Repositories Deleted",
             description: `${selectedRepos.length} Repositories deleted`,
             variant: "destructive",
           });
-          fetchRepos();
+          console.log("reposCount--",repoCount);
+          
         }
       })
       .catch((err) => {
         toast({
-          title: "Repos not deleted (Not Found)",
+          title: "Repository not found or you don’t have permission to delete it.",
           description: err.response.data,
           variant: "destructive",
         });
@@ -185,7 +186,7 @@ const Search = () => {
           </Card>
 
           {/* Actions Bar */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <div className="flex flex-col sm:flex-row sticky top-0 z-10 justify-between items-center mb-6 gap-4">
             <div className="flex items-center gap-4">
               <Button
                 variant="outline"

@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: repowipe
+    runtime: go
+    buildCommand: go build -o app
+    startCommand: ./app
+    envVars:
+      - key: GIN_MODE
+        value: release

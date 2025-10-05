@@ -3,6 +3,7 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"os"
 	"repowipe/config"
 	"repowipe/services"
 	"repowipe/types"
@@ -11,123 +12,129 @@ import (
 	"github.com/google/uuid"
 )
 
-//verifies user
-func VerifyUser(c *gin.Context){
-	_,err  := c.Cookie("session_id")
+// verifies user
+func VerifyUser(c *gin.Context) {
+	_, err := c.Cookie("session_id")
 	if err != nil {
-		log.Println("err",err.Error())
-		c.JSON(http.StatusOK,false)
-		return;
+		log.Println("err", err.Error())
+		c.JSON(http.StatusOK, false)
+		return
 	}
 
 	//you get the cookie
-	c.JSON(http.StatusOK,true)
+	c.JSON(http.StatusOK, true)
 }
 
-//Receives temporary code from github and then pass it to get the 
-//access token
-func SetAccessToken( c *gin.Context){
+// Receives temporary code from github and then pass it to get the
+// access token
+func SetAccessToken(c *gin.Context) {
 	//github oauth temp code and status (to be exchanged for access_token)
-	var tempCred types.TempCode;
+	var tempCred types.TempCode
+
 	// Parse JSON request body into struct
 	if err := c.ShouldBindJSON(&tempCred); err != nil {
 		log.Println("error-=")
-		c.JSON(http.StatusBadGateway,gin.H{"status":"invalid code credentials"})
+		c.JSON(http.StatusForbidden, gin.H{"status": "invalid code credentials"})
 		return
 	}
 
-	accessTokenResp := services.FetchAccessToken(c,tempCred)
-	user := services.FetchUser(c,accessTokenResp.AccessToken)
-	sessionID := saveToken(accessTokenResp.AccessToken)
+	accessTokenResp, err := services.FetchAccessToken(c, tempCred)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err)
+	}
 
-	c.SetCookie(	
+	user := services.FetchUser(c, accessTokenResp.AccessToken)
+	sessionID := saveToken(accessTokenResp.AccessToken)
+	var allowedCookiesDomains string
+	if env := os.Getenv("APP_ENV"); env == "development" {
+		allowedCookiesDomains = "localhost"
+	} else {
+		allowedCookiesDomains = "repowipe.site"
+	}
+
+	c.SetCookie(
 		"session_id",
 		sessionID,
-		0,
+		3600,
 		"/",
-		"localhost",
+		allowedCookiesDomains,
 		true,
 		true,
-	)	
-	c.JSON(200,gin.H{"user":user})
+	)
+	c.JSON(200, gin.H{"user": user})
 }
 
-func FetchAllRepos (c *gin.Context){
+func FetchAllRepos(c *gin.Context) {
 	page := c.Query("page")
-	sessionId,err := c.Cookie("session_id")
-	if err != nil{
-		c.JSON(http.StatusUnauthorized,nil)
+	sessionId, err := c.Cookie("session_id")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, nil)
 		return
 	}
 
-	accessToken := getToken(sessionId)
-	services.FetchRepos(c,accessToken,page)
+	accessToken := getToken(c, sessionId)
+	services.FetchRepos(c, accessToken, page)
 }
 
-
-func SearchRepos (c *gin.Context){
-	sessionId,err := c.Cookie("session_id")
+func SearchRepos(c *gin.Context) {
+	sessionId, err := c.Cookie("session_id")
 	username := c.Query("username")
 	reponame := c.Query("reponame")
 
-	if err != nil{
-		c.JSON(http.StatusUnauthorized,nil)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, nil)
 		return
 	}
-	accessToken := getToken(sessionId)
-	services.SearchRepos(c,accessToken,username,reponame)
+	accessToken := getToken(c, sessionId)
+	services.SearchRepos(c, accessToken, username, reponame)
 }
 
+func DeleteRepos(c *gin.Context) {
+	sessionId, err := c.Cookie("session_id")
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, nil)
+	}
 
-func DeleteRepos(c *gin.Context){
-		sessionId,err := c.Cookie("session_id")
-		if(err != nil){
-			c.JSON(http.StatusUnauthorized,nil)
-		}
+	accessToken := getToken(c, sessionId)
+	var notFoundRepos []string
 
-		accessToken := getToken(sessionId)
-		var notFoundRepos []string
+	var deleteRepoData types.GithubRepoDelete
+	if err := c.ShouldBindJSON(&deleteRepoData); err != nil {
+		log.Println("controller-del-repo: ", err.Error())
+		c.JSON(http.StatusBadRequest, nil)
+	}
+	username := deleteRepoData.Username
+	for _, repo := range deleteRepoData.Repos {
+		err := services.DeleteRepos(c, accessToken, repo, username)
+		if err != nil {
+			log.Println("repo not found", err.Error())
+			notFoundRepos = append(notFoundRepos, err.Error())
+		}
+	}
 
-		var deleteRepoData types.GithubRepoDelete
-		if err := c.ShouldBindJSON(&deleteRepoData); err != nil{
-			log.Println("controller-del-repo: ",err.Error())
-			c.JSON(http.StatusBadRequest,nil)
-		}
-		username := deleteRepoData.Username
-		for _,repo := range deleteRepoData.Repos{
-			err = services.DeleteRepos(c, accessToken ,repo, username)
-			if err != nil {
-				log.Println("repo not found",err.Error())
-				errorMsg := err.Error()
-				notFoundRepos = append(notFoundRepos,errorMsg)
-			}
-		}
-
-		if len(notFoundRepos) > 0 {
-			c.JSON(http.StatusNotFound, notFoundRepos)
-		}
+	if len(notFoundRepos) > 0 {
+		c.JSON(http.StatusNotFound, notFoundRepos)
+	} else {
+		c.JSON(http.StatusOK, "Repos Deleted")
+	}
 }
 
-
-
-//Utility
-//save access token to redis
+// Utility
+// save access token to redis
 func saveToken(access_token string) string {
 	ctx := config.Ctx
 	sessionID := uuid.New().String() // random unique ID
-	config.RedisClient.Set(ctx,"session:" + sessionID,access_token,0)
+	config.RedisClient.Set(ctx, "session:"+sessionID, access_token, 0)
 	return sessionID
 }
 
+func getToken(c *gin.Context, tokenId string) string {
+	ctx := config.Ctx
+	accessToken, err := config.RedisClient.Get(ctx, "session:"+tokenId).Result()
 
-func getToken(tokenId string) string {
-		ctx := config.Ctx
-		accessToken,err := config.RedisClient.Get(ctx, "session:"+tokenId ).Result()
-		if err != nil{
-			panic(err)
-		}
-		return accessToken
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, "Unauthorized")
 	}
 
-
-
+	return accessToken
+}

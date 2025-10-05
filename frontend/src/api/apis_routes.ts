@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import axiosClient from "./axiosClient";
 
 type TempCred = {
@@ -33,7 +34,6 @@ const searchRepos = async (username: string, reponame: string) => {
   const repos = await axiosClient.get(
     `/search/repo?username=${username}&reponame=${reponame}`
   );
-  console.log(repos?.data);
   return repos?.data;
 };
 
@@ -42,15 +42,16 @@ const validateUser = async () => {
   return resp?.data;
 };
 
-const listAllRepos = async (page: number) => {
+const listAllRepos = async (page: number):Promise<AxiosResponse> => {
   const resp = await axiosClient.post(`/fetch/repos?page=${page}`);
   return resp;
 };
 
-const deleteRepos = async (deleteRepos: DeleteRepoData) => {
+const deleteRepos = async (deleteRepos: DeleteRepoData):Promise<AxiosResponse> => {
   const resp = await axiosClient.delete("/delete/repos", {
     data: deleteRepos,
   });
+  return resp 
 };
 
 export {

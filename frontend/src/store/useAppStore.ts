@@ -22,7 +22,7 @@ type AppState = {
   setUser: (user: User | null) => void;
   fetchRepos: () => void;
   findRepos: (searchRepoName: string) => void;
-  deleteRepos: (repoData: DeleteRepoData) => void;
+  deleteRepos: (repoData: DeleteRepoData) => Promise<AxiosResponse>;
 };
 
 export const useAppStore = create<AppState>()(
@@ -56,7 +56,7 @@ export const useAppStore = create<AppState>()(
         if (get().isAuthenticated) {
           const data: boolean = await validateUser();
           if (!data) {
-            set({ isAuthenticated: false });
+            set({ isAuthenticated: false,user:null });
             return;
           }
         }

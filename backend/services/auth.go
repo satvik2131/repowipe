@@ -11,53 +11,53 @@ import (
 )
 
 //fetches the access_token in exchange of temporary credentials
-func FetchAccessToken(c *gin.Context, tempCred types.TempCode) types.AccessTokenResponse {
+func FetchAccessToken(c *gin.Context, tempCred types.TempCode)(*types.AccessTokenResponse,error) {
 	var tokenResp types.AccessTokenResponse
 
+	query := map[string]string{
+		"client_id":     config.ClientId,
+		"client_secret": config.ClientSecret,
+		"code":         tempCred.Code,
+		"redirect_uri": config.Redirect_Uri,
+	}
+
 	resp, err := utils.Client.R().
-		SetQueryParams(map[string]string{
-			"client_id":     config.ClientId,
-			"client_secret": config.ClientSecret,
-			"code":         tempCred.Code,
-			"redirect_uri": config.Redirect_Uri,
-		}).
+		SetQueryParams(query).
 		SetResult(&tokenResp).
 		Post(config.AccessTokenUrl)
 
+
 	if err != nil {
 		log.Printf("Error making request: %v", err)
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
-		return types.AccessTokenResponse{}
+		return nil,err
 	}
 
 	if resp.StatusCode() != http.StatusOK {
 		log.Printf("Error status: %d", resp.StatusCode())
-		c.JSON(resp.StatusCode(), gin.H{"error": "Failed to get access token"})
-		return types.AccessTokenResponse{}
+		return nil,err
 	}
 
-	return tokenResp
+	return &tokenResp,nil
 }
 
 
-func FetchUser(c *gin.Context, accessToken string) types.User {
+func FetchUser(c *gin.Context, accessToken string) any  {
 	var user types.User
 
 	resp, err := utils.Client.R().
 		SetHeader("Authorization", "Bearer "+accessToken).
 		SetResult(&user).
 		Get(config.GetUserApi)
+		
 
 	if err != nil {
 		log.Printf("Error fetching user: %v", err)
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
-		return types.User{}
+		return nil
 	}
 
 	if resp.StatusCode() != http.StatusOK {
 		log.Printf("Error status: %d", resp.StatusCode())
-		c.JSON(resp.StatusCode(), gin.H{"error": "Failed to fetch user"})
-		return types.User{}
+		return nil
 	}
 
 	return user

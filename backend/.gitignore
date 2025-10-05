@@ -1,0 +1,44 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build output
+*.test
+*.out
+
+# Build directories
+/bin/
+/build/
+/dist/
+/target/
+
+# Go workspace
+go.work
+go.work.sum
+
+# Go modules
+vendor/
+
+# Dependency / cache files
+*.log
+*.pid
+*.prof
+*.cover
+*.cov
+*.tmp
+
+# IDE & Editor
+.idea/
+.vscode/
+*.iml
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Env files (keep secrets safe)
+.env
+.env.*

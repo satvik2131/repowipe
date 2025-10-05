@@ -27,6 +27,7 @@ type User struct{
 	TotalPrivateRepos int `json:"total_private_repos"`
 }
 
+
 type GitHubRepo struct {
 	ID          int64  `json:"id"`               // unique repo ID
 	Name        string `json:"name"`        // title of the repo
