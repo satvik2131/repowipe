@@ -19,14 +19,19 @@ COPY backend/go.mod backend/go.sum ./
 RUN go mod download 
 
 COPY backend ./
-COPY --from=frontend-build /frontend/dist ./static  
+COPY --from=frontend-build /frontend/dist ./static
 RUN go mod tidy
 RUN go build -o repowipe
 
 # Stage 3 — Final small image
 FROM alpine:latest
-WORKDIR /backend
+WORKDIR /app
+
+# Copy the binary
 COPY --from=backend-build /backend/repowipe .
+
+# Copy static files (THIS WAS MISSING!)
+COPY --from=backend-build /backend/static ./static
 
 EXPOSE 8080
 CMD ["./repowipe"]

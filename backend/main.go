@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"repowipe/config"
 	"repowipe/routes"
@@ -17,6 +18,11 @@ func main() {
 
 	// Get port from environment variable
 	port := os.Getenv("PORT")
+	app_env := os.Getenv("APP_ENV")
+
+	log.Println("port===",port)
+	log.Println("port===",app_env)
+
 
 	r := gin.Default()
 
