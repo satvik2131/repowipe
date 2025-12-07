@@ -1,10 +1,7 @@
 package config
 
 import (
-	"log"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 
@@ -19,14 +16,6 @@ const (
 
 
 func InitEnvVar(){
-	   // Only try to load .env file in development
-    // Production environments (like Railway) use environment variables directly
-    if err := godotenv.Load(); err != nil {
-        // Don't log error in production - .env file won't exist on Railway
-        if os.Getenv("RAILWAY_ENVIRONMENT") == "" {
-            log.Println("No .env file found, using system environment variables")
-        }
-    }
     
     if os.Getenv("GIN_MODE") == "" {
         os.Setenv("GIN_MODE", "release")

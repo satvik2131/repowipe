@@ -83,6 +83,9 @@ backend/*.dylib
 *.out
 coverage.out
 
+docker-compose.yml
+compose.yml
+
 # Vendor (if you don’t vendor dependencies, ignore it)
 vendor/
 
