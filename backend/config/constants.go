@@ -9,6 +9,7 @@ import (
 
 var ClientId, ClientSecret, Redirect_Uri string
 
+//all github apis
 const (
 	GetUserApi     = "https://api.github.com/user"
 	GetRepoApi     = "https://api.github.com/user/repos"

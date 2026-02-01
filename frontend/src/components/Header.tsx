@@ -13,7 +13,7 @@ export const Header = () => {
     useShallow((state) => ({
       isAuthenticated: state.isAuthenticated,
       user: state.user,
-    }))
+    })),
   );
 
   //sign in with github oauth
@@ -23,8 +23,9 @@ export const Header = () => {
     const state: string = import.meta.env.VITE_GITHUB_SECRET;
     const redirect_url: string = import.meta.env.VITE_REDIRECT_URL;
     const scope: string = "repo,user,delete_repo";
+    const final_url = `${git_redirect_url}?client_id=${client_id}&redirect_uri=${redirect_url}&scope=${scope}&state=${state}`;
 
-    window.location.href = `${git_redirect_url}?client_id=${client_id}&redirect_uri=${redirect_url}&scope=${scope}&state=${state}`;
+    window.location.href = final_url;
   };
 
   return (

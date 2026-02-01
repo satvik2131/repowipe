@@ -1,7 +1,11 @@
 import axios, { AxiosResponse, HttpStatusCode } from "axios";
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
+  baseURL:
+    import.meta.env.VITE_API_URL ||
+    (window.location.hostname === "localhost"
+      ? "http://localhost:8080/api"
+      : "/api"),
   withCredentials: true, // if using cookies for auth
 });
 
