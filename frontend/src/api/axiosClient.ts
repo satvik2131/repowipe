@@ -9,20 +9,19 @@ const axiosClient = axios.create({
   withCredentials: true, // if using cookies for auth
 });
 
-
 // Optional: add interceptors
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error("API Error:", error.response?.data || error.message);
-    
-    if(error.response?.status === HttpStatusCode.Unauthorized) {
-      localStorage.removeItem("auth")
-      window.location.href = "/"
+
+    if (error.response?.status === HttpStatusCode.Unauthorized) {
+      localStorage.removeItem("auth");
+      window.location.href = "/";
     }
-    //Handling error responses  
+    //Handling error responses
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosClient;
