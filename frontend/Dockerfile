@@ -5,7 +5,8 @@ COPY package*.json ./
 COPY vite.config.ts ./
 RUN npm install --frozen-lockfile
 COPY . .
-RUN npm run build
+ARG BUILD_CMD=build
+RUN npm run ${BUILD_CMD}
 
 FROM node:20-alpine
 WORKDIR /app

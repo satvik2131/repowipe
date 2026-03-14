@@ -26,7 +26,7 @@ const authenticateUser = async (
     );
     return resp;
   } catch (error) {
-    return error;
+    throw error;
   }
 };
 
