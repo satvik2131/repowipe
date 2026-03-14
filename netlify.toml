@@ -1,0 +1,19 @@
+# Netlify configuration for Repowipe frontend
+# Docs: https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  # Directory to run the build command from (relative to repo root)
+  base = "frontend"
+  # Build command — uses production env by default
+  command = "npm run build"
+  # Directory that contains the built files to deploy
+  publish = "dist"
+
+# --- SPA Redirect Rule ---
+# React Router handles routing on the client side. Without this rule,
+# refreshing a page or navigating directly to a sub-path (e.g. /dashboard)
+# would return a 404 from Netlify's CDN.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

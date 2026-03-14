@@ -1,0 +1,46 @@
+version: '3.8'
+
+# docker-compose.dev.yml — local development (all services)
+# Usage: docker compose -f docker-compose.dev.yml up --build
+#
+# This runs the full stack locally:
+#   - backend (Go) on port 8080
+#   - frontend (Vite dev served via 'serve') on port 3000
+#   - redis on port 6379
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env.development
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        BUILD_CMD: build
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env.development
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  default:
+    name: repowipe_network

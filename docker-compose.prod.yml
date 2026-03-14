@@ -1,0 +1,35 @@
+version: '3.8'
+
+# docker-compose.prod.yml — local PRODUCTION testing
+# Usage: docker compose -f docker-compose.prod.yml up --build
+#
+# This mirrors the cloud deployment as closely as possible:
+#   - backend (Go) on port 8080  → simulates Koyeb
+#   - redis on port 6379          → simulates Upstash (swap REDIS_ADDRESS in .env.production for real Upstash)
+#
+# The frontend is NOT here — it runs on Netlify.
+# To test the full stack locally in prod mode, point your browser to the Netlify
+# preview URL or run `npm run build && npx serve -s dist` in frontend/.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env.production
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+networks:
+  default:
+    name: repowipe_prod_network

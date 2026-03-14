@@ -20,22 +20,29 @@ const (
 )
 
 func InitEnvVar() {
-	// Try to load .env file - only works in local development
-	// Silently fails in Docker/Koyeb/Railway where env vars are injected
-	_ = godotenv.Load()
+	// Determine which .env file to load based on APP_ENV.
+	// When deploying to Koyeb, env vars are injected directly — Load() will
+	// silently fail and that is fine.
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv == "production" {
+		_ = godotenv.Load(".env.production")
+	} else {
+		// Default to development
+		_ = godotenv.Load(".env.development")
+	}
 
 	// Set GIN_MODE to release if not specified
 	if os.Getenv("GIN_MODE") == "" {
 		os.Setenv("GIN_MODE", "release")
 	}
 
-	// Determine redirect URI based on environment
-	env := os.Getenv("APP_ENV")
-	if env == "development" {
-		Redirect_Uri = "http://localhost:3000/auth"
-	} else {
-		Redirect_Uri = "https://repowipe.site/auth"
+	// Redirect URI — must match the GitHub OAuth App callback setting.
+	// Set FRONTEND_URL to e.g. https://myapp.netlify.app (no trailing slash).
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000" // safe local default
 	}
+	Redirect_Uri = frontendURL + "/auth"
 
 	// Load required environment variables
 	ClientId = os.Getenv("GITHUB_CLIENT_ID")
