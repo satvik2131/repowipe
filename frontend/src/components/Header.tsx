@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/useAppStore";
 import { Github, Code } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { AvatarFallback } from "@radix-ui/react-avatar";
+import { getGithubLoginUrl } from "@/api/auth.api";
 
 export const Header = () => {
   const location = useLocation();
@@ -16,16 +17,18 @@ export const Header = () => {
     })),
   );
 
-  //sign in with github oauth
-  const githubOAuth = () => {
-    const git_redirect_url: string = import.meta.env.VITE_GITHUB_REDIRECT_URI;
-    const client_id: string = import.meta.env.VITE_CLIENT_ID;
-    const state: string = import.meta.env.VITE_GITHUB_SECRET;
-    const redirect_url: string = import.meta.env.VITE_REDIRECT_URL;
-    const scope: string = "repo,user,delete_repo";
-    const final_url = `${git_redirect_url}?client_id=${client_id}&redirect_uri=${redirect_url}&scope=${scope}&state=${state}`;
-
-    window.location.href = final_url;
+  /**
+   * Initiates GitHub OAuth by asking the backend for the authorization URL.
+   * The backend constructs the URL with client_id, redirect_uri, scope, and a
+   * server-generated CSRF state token — nothing sensitive lives in the frontend.
+   */
+  const githubOAuth = async () => {
+    try {
+      const url = await getGithubLoginUrl();
+      window.location.href = url;
+    } catch (err) {
+      console.error("Failed to get GitHub login URL:", err);
+    }
   };
 
   return (

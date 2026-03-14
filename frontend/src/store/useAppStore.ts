@@ -1,16 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  validateUser,
-  listAllRepos,
-  searchRepos,
-  deleteRepos,
-} from "@/api/apis_routes";
+import { validateUser } from "@/api/auth.api";
+import { listAllRepos, searchRepos, deleteRepos } from "@/api/repos.api";
 import { AxiosResponse } from "axios";
 
 type AppState = {
   isLoading: boolean;
-  isError: string;
+  isError: string | null;
   isAuthenticated: boolean;
   user: User | null;
   allRepos: Repos[] | null;
@@ -35,45 +31,43 @@ export const useAppStore = create<AppState>()(
       allRepos: [],
       searchedRepos: [],
       page: 1,
-      setPage: (pg) => {
-        set({ page: pg });
-      },
-      findRepos: async (searchRepoName) => {
-        set({ isLoading: true });
-        const searchedRepos = await searchRepos(
-          get().user.login,
-          searchRepoName
-        );
 
-        set({ isLoading: false, searchedRepos: searchedRepos });
-      },
-      fetchRepos: async () => {
-        set({ isLoading: true });
-        const repositories = await listAllRepos(get().page);
-        set({ isLoading: false, allRepos: repositories.data });
-      },
+      setPage: (pg) => set({ page: pg }),
+
       checkAuth: async () => {
         if (get().isAuthenticated) {
-          const data: boolean = await validateUser();
-          if (!data) {
-            set({ isAuthenticated: false,user:null });
-            return;
+          const isValid = await validateUser();
+          if (!isValid) {
+            set({ isAuthenticated: false, user: null });
           }
         }
       },
-      deleteRepos: async (repoData) => {
-        const resp = await deleteRepos(repoData);
-        return resp;
+
+      findRepos: async (searchRepoName) => {
+        set({ isLoading: true });
+        const results = await searchRepos(get().user!.login, searchRepoName);
+        set({ isLoading: false, searchedRepos: results });
       },
+
+      fetchRepos: async () => {
+        set({ isLoading: true });
+        const resp = await listAllRepos(get().page);
+        set({ isLoading: false, allRepos: resp.data });
+      },
+
+      deleteRepos: async (repoData) => {
+        return deleteRepos(repoData);
+      },
+
       setIsAuthenticated: (auth) => set({ isAuthenticated: auth }),
       setUser: (user) => set({ user }),
     }),
     {
-      name: "auth", // key in localStorage
+      name: "auth",
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
-      }), // only persist auth + user
+      }),
     }
   )
 );

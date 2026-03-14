@@ -9,13 +9,14 @@ import (
 
 var ClientId, ClientSecret, Redirect_Uri string
 
-//all github apis
+// all github apis
 const (
-	GetUserApi     = "https://api.github.com/user"
-	GetRepoApi     = "https://api.github.com/user/repos"
-	AccessTokenUrl = "https://github.com/login/oauth/access_token"
-	SearchUri      = "https://api.github.com/search/repositories"
-	DeleteApi      = "https://api.github.com/repos/"
+	GithubAuthorizeURL = "https://github.com/login/oauth/authorize"
+	GetUserApi         = "https://api.github.com/user"
+	GetRepoApi         = "https://api.github.com/user/repos"
+	AccessTokenUrl     = "https://github.com/login/oauth/access_token"
+	SearchUri          = "https://api.github.com/search/repositories"
+	DeleteApi          = "https://api.github.com/repos/"
 )
 
 func InitEnvVar() {
