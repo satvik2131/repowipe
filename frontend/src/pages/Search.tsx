@@ -40,6 +40,7 @@ const Search = () => {
     setPage,
     searchedRepos,
     deleteRepos,
+    user,
   } = useAppStore(
     useShallow((state) => ({
       fetchRepos: state.fetchRepos,
@@ -48,14 +49,21 @@ const Search = () => {
       deleteRepos: state.deleteRepos,
       searchedRepos: state.searchedRepos,
       allRepos: state.allRepos,
-      repoCount: state.user.public_repos + state.user.total_private_repos,
+      user: state.user,
+      repoCount: state.user
+        ? state.user.public_repos + state.user.total_private_repos
+        : 0,
       page: state.page,
-      username: state.user.login,
+      username: state.user?.login ?? "",
     }))
   );
 
   //Count the pages for number of repositories
   const paginationCount = Math.ceil(repoCount / 10);
+
+  if (!user) {
+    return null;
+  }
 
   //Fetched all Repositories if it is empty
   useEffect(() => {

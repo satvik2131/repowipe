@@ -35,10 +35,18 @@ export const useAppStore = create<AppState>()(
       setPage: (pg) => set({ page: pg }),
 
       checkAuth: async () => {
-        if (get().isAuthenticated) {
+        const { isAuthenticated, user } = get();
+        // Clear broken persisted sessions (auth flag without a user object)
+        if (isAuthenticated && !user) {
+          set({ isAuthenticated: false, user: null });
+          localStorage.removeItem("auth");
+          return;
+        }
+        if (isAuthenticated) {
           const isValid = await validateUser();
           if (!isValid) {
             set({ isAuthenticated: false, user: null });
+            localStorage.removeItem("auth");
           }
         }
       },
@@ -68,6 +76,12 @@ export const useAppStore = create<AppState>()(
         isAuthenticated: state.isAuthenticated,
         user: state.user,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.isAuthenticated && !state.user) {
+          state.setIsAuthenticated(false);
+          state.setUser(null);
+        }
+      },
     }
   )
 );

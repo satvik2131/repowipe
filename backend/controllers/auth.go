@@ -70,30 +70,57 @@ func SetAccessToken(c *gin.Context) {
 		return
 	}
 
+	if tempCred.State == "" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "missing oauth state"})
+		return
+	}
+	stateKey := "oauth:state:" + tempCred.State
+	if err := config.RedisClient.Get(config.Ctx, stateKey).Err(); err != nil {
+		log.Println("SetAccessToken: invalid oauth state:", err)
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid oauth state"})
+		return
+	}
+	_ = config.RedisClient.Del(config.Ctx, stateKey).Err()
+
 	accessTokenResp, err := services.FetchAccessToken(c, tempCred)
-	if err != nil {
+	if err != nil || accessTokenResp == nil || accessTokenResp.AccessToken == "" {
 		log.Println("SetAccessToken: FetchAccessToken error:", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "could not exchange code for token"})
 		return
 	}
 
 	user := services.FetchUser(c, accessTokenResp.AccessToken)
+	if user == nil {
+		log.Println("SetAccessToken: FetchUser returned nil")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "could not fetch github user"})
+		return
+	}
 	sessionID := saveToken(accessTokenResp.AccessToken)
 
-	var cookieDomain string
+	// COOKIE_DOMAIN is the domain the session cookie is scoped to.
+	// - Local dev: "localhost"
+	// - Cross-site (frontend on Vercel, backend on Koyeb): leave empty so the
+	//   cookie is host-only on the backend origin; browsers will still send it
+	//   with credentialed requests when SameSite=None; Secure.
+	cookieDomain := os.Getenv("COOKIE_DOMAIN")
+
+	// For cross-site requests (frontend and backend on different registrable
+	// domains) the cookie must be SameSite=None and Secure. In dev we keep
+	// SameSite=Lax over http://localhost.
 	if os.Getenv("APP_ENV") == "development" {
-		cookieDomain = "localhost"
+		c.SetSameSite(http.SameSiteLaxMode)
 	} else {
-		cookieDomain = "repowipe.site"
+		c.SetSameSite(http.SameSiteNoneMode)
 	}
 
+	secure := os.Getenv("APP_ENV") != "development"
 	c.SetCookie(
 		"session_id",
 		sessionID,
 		3600,
 		"/",
 		cookieDomain,
-		true,
+		secure,
 		true,
 	)
 	c.JSON(http.StatusOK, gin.H{"user": user})

@@ -37,7 +37,7 @@ func InitEnvVar() {
 	}
 
 	// Redirect URI — must match the GitHub OAuth App callback setting.
-	// Set FRONTEND_URL to e.g. https://myapp.netlify.app (no trailing slash).
+	// Set FRONTEND_URL to e.g. https://myapp.vercel.app (no trailing slash).
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
 		frontendURL = "http://localhost:3000" // safe local default

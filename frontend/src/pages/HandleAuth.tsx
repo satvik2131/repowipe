@@ -31,9 +31,12 @@ const HandleAuth = () => {
 
     if (data) {
       const user: User = data.data.user;
-      if (user) {
-        setUser(user);
+      if (!user) {
+        console.error("Auth error: no user returned from callback");
+        navigate("/");
+        return;
       }
+      setUser(user);
       setIsAuthenticated(true);
       navigate("/search");
     }

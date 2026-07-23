@@ -1,0 +1,41 @@
+# Koyeb deployment reference for the repowipe backend.
+#
+# Koyeb does not auto-consume this file; it documents the settings to use when
+# creating the service via the dashboard or `koyeb service create` CLI.
+#
+# Recommended CLI invocation (run from repo root):
+#
+#   koyeb service create repowipe-api \
+#     --app repowipe \
+#     --git github.com/<owner>/repowipe \
+#     --git-branch main \
+#     --git-builder docker \
+#     --git-docker-dockerfile backend/Dockerfile \
+#     --git-docker-context backend \
+#     --ports 8080:http \
+#     --routes /:8080 \
+#     --instance-type free \
+#     --regions fra \
+#     --env APP_ENV=production \
+#     --env GIN_MODE=release \
+#     --env PORT=8080 \
+#     --env FRONTEND_URL=https://<your-site>.vercel.app \
+#     --env ALLOWED_ORIGINS=https://<your-site>.vercel.app \
+#     --env GITHUB_CLIENT_ID=@github-client-id \
+#     --env GITHUB_CLIENT_SECRET=@github-client-secret \
+#     --env REDIS_ADDRESS=@redis-address \
+#     --env REDIS_PASSWORD=@redis-password
+#
+# Required env vars (set as Koyeb secrets where sensitive):
+#   APP_ENV             production
+#   GIN_MODE            release
+#   PORT                8080
+#   FRONTEND_URL        https://<your-site>.vercel.app
+#   ALLOWED_ORIGINS     comma-separated list of allowed frontend origins
+#   GITHUB_CLIENT_ID    GitHub OAuth App client id
+#   GITHUB_CLIENT_SECRET GitHub OAuth App client secret
+#   REDIS_ADDRESS       host:port (e.g. xxx.upstash.io:6379)
+#   REDIS_PASSWORD      Redis password (empty if none)
+#   COOKIE_DOMAIN       leave unset for cross-site (Vercel + Koyeb) deploys;
+#                       set only if frontend and backend share a registrable
+#                       domain (e.g. .repowipe.site)

@@ -70,7 +70,7 @@ export const Header = () => {
             )}
           </nav>
 
-          {!isAuthenticated ? (
+          {!isAuthenticated || !user ? (
             <div className="flex items-center gap-4">
               <Button className="font-space" onClick={githubOAuth}>
                 <Github className="mr-2 h-5 w-5" />

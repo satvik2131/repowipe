@@ -27,7 +27,7 @@ func main() {
 	r := gin.Default()
 
 	// Build allowed origins from env var (comma-separated)
-	// e.g. ALLOWED_ORIGINS=http://localhost:3000,https://myapp.netlify.app
+	// e.g. ALLOWED_ORIGINS=http://localhost:3000,https://myapp.vercel.app
 	allowedOriginsEnv := os.Getenv("ALLOWED_ORIGINS")
 	allowedOrigins := []string{"http://localhost:3000"} // safe default
 	if allowedOriginsEnv != "" {
@@ -43,7 +43,7 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Frontend is deployed on Netlify — no static file serving needed here.
+	// Frontend is deployed on Vercel — no static file serving needed here.
 	// All unmatched routes return 404 for unknown API paths.
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "endpoint not found"})

@@ -8,8 +8,9 @@ type ProtectedRouteProps = {
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  const user = useAppStore((state) => state.user);
 
-  return isAuthenticated ? (
+  return isAuthenticated && user ? (
     <div className="protected-content">{children}</div>
   ) : (
     <Navigate to="/" replace />

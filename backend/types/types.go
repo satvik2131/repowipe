@@ -1,8 +1,8 @@
 package types
 
-type TempCode struct{
-	Code string `json:"code"`
-	Status string `json:"status"`
+type TempCode struct {
+	Code  string `json:"code"`
+	State string `json:"state"`
 }
 
 type RequestBodyAuth struct{

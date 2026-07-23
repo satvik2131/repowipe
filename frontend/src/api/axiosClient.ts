@@ -1,12 +1,20 @@
 import axios, { AxiosResponse, HttpStatusCode } from "axios";
 
+const apiURL =
+  import.meta.env.VITE_API_URL ||
+  (window.location.hostname === "localhost"
+    ? "http://localhost:8080/api"
+    : undefined);
+
+if (!apiURL) {
+  throw new Error(
+    "VITE_API_URL is not set. Configure it in the Vercel build environment to point at the Koyeb backend (e.g. https://<app>.koyeb.app/api).",
+  );
+}
+
 const axiosClient = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL ||
-    (window.location.hostname === "localhost"
-      ? "http://localhost:8080/api"
-      : "/api"),
-  withCredentials: true, // if using cookies for auth
+  baseURL: apiURL,
+  withCredentials: true, // send session cookie cross-site
 });
 
 // Optional: add interceptors
