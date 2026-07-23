@@ -9,16 +9,16 @@ type AppState = {
   isError: string | null;
   isAuthenticated: boolean;
   user: User | null;
-  allRepos: Repos[] | null;
-  searchedRepos: Repos[] | null;
+  allRepos: Repos[];
+  searchedRepos: Repos[];
   page: number;
   setPage: (pg: number) => void;
   checkAuth: () => void;
   logout: () => Promise<void>;
   setIsAuthenticated: (auth: boolean) => void;
   setUser: (user: User | null) => void;
-  fetchRepos: () => void;
-  findRepos: (searchRepoName: string) => void;
+  fetchRepos: (filters?: Pick<RepoListFilters, "visibility" | "sort" | "direction">) => Promise<void>;
+  findRepos: (searchRepoName: string, filters?: Partial<RepoListFilters>) => Promise<void>;
   deleteRepos: (repoData: DeleteRepoData) => Promise<AxiosResponse>;
 };
 
@@ -70,16 +70,33 @@ export const useAppStore = create<AppState>()(
         localStorage.removeItem("auth");
       },
 
-      findRepos: async (searchRepoName) => {
-        set({ isLoading: true });
-        const results = await searchRepos(get().user!.login, searchRepoName);
-        set({ isLoading: false, searchedRepos: results });
+      findRepos: async (searchRepoName, filters) => {
+        set({ isLoading: true, isError: null });
+        try {
+          const results = await searchRepos(
+            get().user!.login,
+            searchRepoName,
+            filters
+          );
+          set({ isLoading: false, searchedRepos: Array.isArray(results) ? results : [] });
+        } catch (err) {
+          console.error("findRepos failed:", err);
+          set({ isLoading: false, searchedRepos: [], isError: "Search failed" });
+        }
       },
 
-      fetchRepos: async () => {
-        set({ isLoading: true });
-        const resp = await listAllRepos(get().page);
-        set({ isLoading: false, allRepos: resp.data });
+      fetchRepos: async (filters) => {
+        set({ isLoading: true, isError: null });
+        try {
+          const resp = await listAllRepos(get().page, filters);
+          set({
+            isLoading: false,
+            allRepos: Array.isArray(resp.data) ? resp.data : [],
+          });
+        } catch (err) {
+          console.error("fetchRepos failed:", err);
+          set({ isLoading: false, allRepos: [], isError: "Failed to load repos" });
+        }
       },
 
       deleteRepos: async (repoData) => {

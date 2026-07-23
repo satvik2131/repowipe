@@ -13,11 +13,28 @@ import (
 )
 
 // Repositories related services
-func FetchRepos(c *gin.Context, accessToken string, page string) {
+func FetchRepos(c *gin.Context, accessToken string, page, visibility, sort, direction string) {
 	var repos types.GitHubRepoList
+	if page == "" {
+		page = "1"
+	}
+	if visibility == "" {
+		visibility = "all"
+	}
+	if sort == "" {
+		sort = "updated"
+	}
+	if direction == "" {
+		direction = "desc"
+	}
+
 	query := map[string]string{
-		"page":     page,
-		"per_page": "10",
+		"page":        page,
+		"per_page":    "10",
+		"visibility":  visibility,
+		"sort":        sort,
+		"direction":   direction,
+		"affiliation": "owner",
 	}
 	_, err := utils.Client.R().
 		SetHeader("Authorization", "Bearer "+accessToken).
@@ -55,16 +72,49 @@ func DeleteRepos(c *gin.Context, accessToken, reponame, username string) error {
 	return errors.New(reponame)
 }
 
-func SearchRepos(c *gin.Context, accessToken, username, reponame string) {
+func SearchRepos(c *gin.Context, accessToken, username, reponame, language, visibility, kind, sort string) {
 	var searchedRepos types.GitHubSearchResponse
-	queryParams := fmt.Sprintf("?q=user:%s+%s", username, reponame)
-	uri := config.SearchUri + queryParams
+
+	q := fmt.Sprintf("user:%s", username)
+	if reponame != "" {
+		q += " " + reponame + " in:name,description"
+	}
+	if language != "" {
+		q += " language:" + language
+	}
+	switch visibility {
+	case "public":
+		q += " is:public"
+	case "private":
+		q += " is:private"
+	}
+	switch kind {
+	case "forks":
+		q += " fork:only archived:false"
+	case "sources":
+		q += " fork:false archived:false"
+	case "archived":
+		q += " archived:true"
+	}
+
+	if sort == "" || (sort != "stars" && sort != "updated" && sort != "forks") {
+		sort = "updated"
+	}
+
 	resp, err := utils.Client.R().
 		SetHeader("Authorization", "Bearer "+accessToken).
+		SetQueryParams(map[string]string{
+			"q":        q,
+			"sort":     sort,
+			"order":    "desc",
+			"per_page": "30",
+		}).
 		SetResult(&searchedRepos).
-		Get(uri)
+		Get(config.SearchUri)
 
-	log.Println("Final_url---", resp.Request.URL)
+	if resp != nil {
+		log.Println("Final_url---", resp.Request.URL)
+	}
 	if err != nil {
 		log.Println("SearchRepos--", err)
 		c.JSON(http.StatusConflict, nil)

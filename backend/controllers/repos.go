@@ -12,6 +12,10 @@ import (
 // FetchAllRepos returns a paginated list of the authenticated user's repos.
 func FetchAllRepos(c *gin.Context) {
 	page := c.Query("page")
+	visibility := c.DefaultQuery("visibility", "all")
+	sort := c.DefaultQuery("sort", "updated")
+	direction := c.DefaultQuery("direction", "desc")
+
 	sessionID, err := c.Cookie("session_id")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -22,7 +26,7 @@ func FetchAllRepos(c *gin.Context) {
 	if accessToken == "" {
 		return // getToken already wrote the 401 response
 	}
-	services.FetchRepos(c, accessToken, page)
+	services.FetchRepos(c, accessToken, page, visibility, sort, direction)
 }
 
 // SearchRepos proxies a search query to the GitHub search API.
@@ -35,12 +39,16 @@ func SearchRepos(c *gin.Context) {
 
 	username := c.Query("username")
 	reponame := c.Query("reponame")
+	language := c.Query("language")
+	visibility := c.Query("visibility")
+	kind := c.Query("kind")
+	sort := c.DefaultQuery("sort", "updated")
 
 	accessToken := getToken(c, sessionID)
 	if accessToken == "" {
 		return
 	}
-	services.SearchRepos(c, accessToken, username, reponame)
+	services.SearchRepos(c, accessToken, username, reponame, language, visibility, kind, sort)
 }
 
 // DeleteRepos deletes each repo in the request body for the authenticated user.
