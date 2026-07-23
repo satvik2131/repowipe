@@ -18,6 +18,9 @@ func Router(r *gin.Engine) {
 		// Receives the temporary code from the GitHub OAuth callback and
 		// exchanges it for an access token, then sets a session cookie.
 		auth.POST("/github/callback", controllers.SetAccessToken)
+
+		// Clears Redis session, revokes GitHub token, and expires the cookie.
+		auth.POST("/logout", controllers.Logout)
 	}
 
 	// Kept for backward-compat if anything still points at the old path.

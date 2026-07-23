@@ -69,3 +69,32 @@ func FetchUser(c *gin.Context, accessToken string) any  {
 
 	return user
 }
+
+// RevokeAccessToken invalidates a GitHub OAuth access token for this app.
+// Best-effort: callers should still complete local session cleanup on failure.
+func RevokeAccessToken(accessToken string) error {
+	if accessToken == "" {
+		return nil
+	}
+
+	url := config.RevokeTokenURL + config.ClientId + "/token"
+	resp, err := utils.Client.R().
+		SetBasicAuth(config.ClientId, config.ClientSecret).
+		SetHeader("Accept", "application/vnd.github+json").
+		SetHeader("X-GitHub-Api-Version", "2022-11-28").
+		SetBody(map[string]string{"access_token": accessToken}).
+		Delete(url)
+
+	if err != nil {
+		log.Printf("RevokeAccessToken: request error: %v", err)
+		return err
+	}
+
+	// 204 No Content = success; 404 = already revoked / unknown — treat as ok.
+	if resp.StatusCode() != http.StatusNoContent && resp.StatusCode() != http.StatusNotFound {
+		log.Printf("RevokeAccessToken: unexpected status %d body=%s", resp.StatusCode(), resp.String())
+		return errors.New("github token revoke failed")
+	}
+
+	return nil
+}

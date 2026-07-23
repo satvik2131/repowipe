@@ -17,6 +17,9 @@ const (
 	AccessTokenUrl     = "https://github.com/login/oauth/access_token"
 	SearchUri          = "https://api.github.com/search/repositories"
 	DeleteApi          = "https://api.github.com/repos/"
+	// RevokeTokenURL is the GitHub Apps OAuth token revocation endpoint.
+	// Append client_id: DELETE /applications/{client_id}/token
+	RevokeTokenURL = "https://api.github.com/applications/"
 )
 
 func InitEnvVar() {

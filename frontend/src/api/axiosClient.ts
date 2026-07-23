@@ -1,16 +1,12 @@
 import axios, { AxiosResponse, HttpStatusCode } from "axios";
 
+// Prefer same-origin `/api` in production (Vercel rewrites proxy to Koyeb).
+// That avoids Brave/Shields and third-party-cookie blocks on cross-site API calls.
 const apiURL =
   import.meta.env.VITE_API_URL ||
   (window.location.hostname === "localhost"
     ? "http://localhost:8080/api"
-    : undefined);
-
-if (!apiURL) {
-  throw new Error(
-    "VITE_API_URL is not set. Configure it in the Vercel build environment to point at the Koyeb backend (e.g. https://<app>.koyeb.app/api).",
-  );
-}
+    : "/api");
 
 const axiosClient = axios.create({
   baseURL: apiURL,

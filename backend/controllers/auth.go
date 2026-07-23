@@ -96,7 +96,39 @@ func SetAccessToken(c *gin.Context) {
 		return
 	}
 	sessionID := saveToken(accessTokenResp.AccessToken)
+	applySessionCookie(c, sessionID, 3600)
+	c.JSON(http.StatusOK, gin.H{"user": user})
+}
 
+// Logout deletes the Redis session, revokes the GitHub OAuth token (best-effort),
+// and clears the session cookie. Idempotent when no cookie is present.
+func Logout(c *gin.Context) {
+	sessionID, err := c.Cookie("session_id")
+	if err == nil && sessionID != "" {
+		ctx := config.Ctx
+		key := "session:" + sessionID
+
+		accessToken, getErr := config.RedisClient.Get(ctx, key).Result()
+		if getErr == nil && accessToken != "" {
+			if revErr := services.RevokeAccessToken(accessToken); revErr != nil {
+				log.Printf("Logout: GitHub token revoke failed (continuing): %v", revErr)
+			}
+		}
+
+		if delErr := config.RedisClient.Del(ctx, key).Err(); delErr != nil {
+			log.Printf("Logout: failed to delete Redis session: %v", delErr)
+		}
+	}
+
+	applySessionCookie(c, "", -1)
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+// applySessionCookie sets or clears the session_id cookie using the same
+// Domain / Secure / SameSite rules for login and logout so attributes never drift.
+func applySessionCookie(c *gin.Context, value string, maxAge int) {
 	// COOKIE_DOMAIN is the domain the session cookie is scoped to.
 	// - Local dev: "localhost"
 	// - Cross-site (frontend on Vercel, backend on Koyeb): leave empty so the
@@ -114,19 +146,8 @@ func SetAccessToken(c *gin.Context) {
 	}
 
 	secure := os.Getenv("APP_ENV") != "development"
-	c.SetCookie(
-		"session_id",
-		sessionID,
-		3600,
-		"/",
-		cookieDomain,
-		secure,
-		true,
-	)
-	c.JSON(http.StatusOK, gin.H{"user": user})
+	c.SetCookie("session_id", value, maxAge, "/", cookieDomain, secure, true)
 }
-
-// ── helpers ──────────────────────────────────────────────────────────────────
 
 // saveToken persists the GitHub access token in Redis under a random session
 // ID and returns that session ID.

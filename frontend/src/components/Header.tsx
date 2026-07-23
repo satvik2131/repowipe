@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/useAppStore";
-import { Github, Code } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Github, Code, LogOut } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { AvatarFallback } from "@radix-ui/react-avatar";
@@ -9,11 +9,13 @@ import { getGithubLoginUrl } from "@/api/auth.api";
 
 export const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isSearchPage = location.pathname === "/search";
-  const { isAuthenticated, user } = useAppStore(
+  const { isAuthenticated, user, logout } = useAppStore(
     useShallow((state) => ({
       isAuthenticated: state.isAuthenticated,
       user: state.user,
+      logout: state.logout,
     })),
   );
 
@@ -29,6 +31,11 @@ export const Header = () => {
     } catch (err) {
       console.error("Failed to get GitHub login URL:", err);
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
   return (
@@ -86,6 +93,14 @@ export const Header = () => {
                 </AvatarFallback>
               </Avatar>
               <span className="truncate">{user.login}</span>
+              <Button
+                variant="outline"
+                className="font-space"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span className="truncate">Logout</span>
+              </Button>
             </div>
           )}
         </div>

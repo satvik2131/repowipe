@@ -50,4 +50,12 @@ const validateUser = async (): Promise<boolean> => {
   return resp.data;
 };
 
-export { getGithubLoginUrl, authenticateUser, validateUser };
+/**
+ * Logs out: backend clears Redis session, revokes the GitHub token, and
+ * expires the session cookie.
+ */
+const logoutUser = async (): Promise<void> => {
+  await axiosClient.post("/auth/logout");
+};
+
+export { getGithubLoginUrl, authenticateUser, validateUser, logoutUser };

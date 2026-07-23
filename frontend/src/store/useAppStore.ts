@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { validateUser } from "@/api/auth.api";
+import { validateUser, logoutUser } from "@/api/auth.api";
 import { listAllRepos, searchRepos, deleteRepos } from "@/api/repos.api";
 import { AxiosResponse } from "axios";
 
@@ -14,6 +14,7 @@ type AppState = {
   page: number;
   setPage: (pg: number) => void;
   checkAuth: () => void;
+  logout: () => Promise<void>;
   setIsAuthenticated: (auth: boolean) => void;
   setUser: (user: User | null) => void;
   fetchRepos: () => void;
@@ -49,6 +50,24 @@ export const useAppStore = create<AppState>()(
             localStorage.removeItem("auth");
           }
         }
+      },
+
+      logout: async () => {
+        try {
+          await logoutUser();
+        } catch (err) {
+          console.error("Logout API failed (clearing local session anyway):", err);
+        }
+        set({
+          isAuthenticated: false,
+          user: null,
+          allRepos: [],
+          searchedRepos: [],
+          page: 1,
+          isLoading: false,
+          isError: null,
+        });
+        localStorage.removeItem("auth");
       },
 
       findRepos: async (searchRepoName) => {
