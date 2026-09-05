@@ -114,3 +114,4 @@ backend/.env.*
 # Keys / certs
 *.pem
 *.key
+.env

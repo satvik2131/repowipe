@@ -9,28 +9,30 @@ import (
 func Router(r *gin.Engine) {
 	base := r.Group("/api")
 
-	// ── Auth ─────────────────────────────────────────────────────────────────
+	// ── Auth (static paths before :provider) ──────────────────────────────────
 	auth := base.Group("/auth")
 	{
-		// Returns the full GitHub OAuth URL — client never needs to know client_id
-		auth.GET("/github/login", controllers.GetGithubLoginURL)
-
-		// Receives the temporary code from the GitHub OAuth callback and
-		// exchanges it for an access token, then sets a session cookie.
-		auth.POST("/github/callback", controllers.SetAccessToken)
-
-		// Clears Redis session, revokes GitHub token, and expires the cookie.
+		auth.GET("/connections", controllers.GetConnections)
 		auth.POST("/logout", controllers.Logout)
+		auth.GET("/:provider/login", controllers.GetProviderLoginURL)
+		auth.POST("/:provider/callback", controllers.ProviderCallback)
+		auth.DELETE("/:provider", controllers.UnlinkProvider)
 	}
 
-	// Kept for backward-compat if anything still points at the old path.
 	base.POST("/set/access/token", controllers.SetAccessToken)
-
-	// ── Session ───────────────────────────────────────────────────────────────
 	base.GET("/verify/user", controllers.VerifyUser)
 
-	// ── Repos ─────────────────────────────────────────────────────────────────
+	// Legacy GitHub-only paths (before /:provider/*)
 	base.POST("/fetch/repos", controllers.FetchAllRepos)
 	base.GET("/search/repo", controllers.SearchRepos)
 	base.DELETE("/delete/repos", controllers.DeleteRepos)
+
+	// Transfers (before /:provider/*)
+	base.POST("/transfers", controllers.StartTransfer)
+	base.GET("/transfers/:id", controllers.GetTransfer)
+
+	// Provider-scoped repos
+	base.POST("/:provider/repos", controllers.FetchProviderRepos)
+	base.GET("/:provider/search", controllers.SearchProviderRepos)
+	base.DELETE("/:provider/repos", controllers.DeleteProviderRepos)
 }

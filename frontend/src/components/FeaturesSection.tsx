@@ -2,27 +2,27 @@ import { CheckCircle } from "lucide-react";
 
 const features = [
   {
-    title: "Bulk Deletion",
-    description: "Delete multiple repositories at once, saving you significant time and effort."
+    title: "Multi-provider login",
+    description: "Sign in with GitHub, GitLab, or Bitbucket, then link the others on the same session."
   },
   {
-    title: "User-Friendly Interface", 
-    description: "An intuitive and clean interface makes selecting and deleting repositories a breeze."
+    title: "Bulk wipe",
+    description: "Delete multiple repositories at once on whichever host is your active source."
   },
   {
-    title: "Secure & Reliable",
-    description: "We use GitHub's official API, ensuring your account and data are always secure."
+    title: "Any-to-any transfer",
+    description: "Mirror git history and best-effort recreate issues, labels, wikis, and PRs/MRs."
   },
   {
-    title: "Repository Filtering",
-    description: "Quickly find the repositories you're looking for with powerful search and filtering options."
+    title: "Repository filtering",
+    description: "Quickly find the repositories you're looking for with search and filters."
   },
   {
-    title: "Safety Confirmation",
+    title: "Safety confirmation",
     description: "A final confirmation step prevents accidental deletion of important repositories."
   },
   {
-    title: "No Installation Needed",
+    title: "No installation needed",
     description: "RepoWipe is a web-based tool, so there's nothing to download or install."
   }
 ];

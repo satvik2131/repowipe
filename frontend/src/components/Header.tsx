@@ -1,11 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/useAppStore";
-import { Github, Code, LogOut } from "lucide-react";
+import { Github, Code, LogOut, Gitlab } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { AvatarFallback } from "@radix-ui/react-avatar";
-import { getGithubLoginUrl } from "@/api/auth.api";
+import { getProviderLoginUrl } from "@/api/auth.api";
+
+const PROVIDERS: { id: Provider; label: string }[] = [
+  { id: "github", label: "GitHub" },
+  { id: "gitlab", label: "GitLab" },
+  { id: "bitbucket", label: "Bitbucket" },
+];
 
 export const Header = () => {
   const location = useLocation();
@@ -19,17 +25,12 @@ export const Header = () => {
     })),
   );
 
-  /**
-   * Initiates GitHub OAuth by asking the backend for the authorization URL.
-   * The backend constructs the URL with client_id, redirect_uri, scope, and a
-   * server-generated CSRF state token — nothing sensitive lives in the frontend.
-   */
-  const githubOAuth = async () => {
+  const startOAuth = async (provider: Provider) => {
     try {
-      const url = await getGithubLoginUrl();
+      const url = await getProviderLoginUrl(provider, "login");
       window.location.href = url;
     } catch (err) {
-      console.error("Failed to get GitHub login URL:", err);
+      console.error(`Failed to get ${provider} login URL:`, err);
     }
   };
 
@@ -38,13 +39,25 @@ export const Header = () => {
     navigate("/");
   };
 
+  const ProviderIcon = ({ provider }: { provider: Provider }) => {
+    if (provider === "gitlab") return <Gitlab className="mr-2 h-4 w-4" />;
+    if (provider === "bitbucket") {
+      return (
+        <span className="mr-2 inline-flex h-4 w-4 items-center justify-center text-[10px] font-bold">
+          BB
+        </span>
+      );
+    }
+    return <Github className="mr-2 h-4 w-4" />;
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-20 gap-4">
           <Link
             to="/"
-            className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-4 hover:opacity-80 transition-opacity shrink-0"
           >
             <Code className="h-8 w-8 text-primary" />
             <h2 className="text-2xl font-bold leading-tight tracking-tighter font-space">
@@ -78,21 +91,31 @@ export const Header = () => {
           </nav>
 
           {!isAuthenticated || !user ? (
-            <div className="flex items-center gap-4">
-              <Button className="font-space" onClick={githubOAuth}>
-                <Github className="mr-2 h-5 w-5" />
-                <span className="truncate">Login with GitHub</span>
-              </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {PROVIDERS.map((p) => (
+                <Button
+                  key={p.id}
+                  variant={p.id === "github" ? "default" : "outline"}
+                  size="sm"
+                  className="font-space"
+                  onClick={() => startOAuth(p.id)}
+                >
+                  <ProviderIcon provider={p.id} />
+                  <span className="truncate hidden sm:inline">
+                    {p.label}
+                  </span>
+                </Button>
+              ))}
             </div>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Avatar>
                 <AvatarImage src={user.avatar_url} />
                 <AvatarFallback>
                   <Github />
                 </AvatarFallback>
               </Avatar>
-              <span className="truncate">{user.login}</span>
+              <span className="truncate max-w-[8rem]">{user.login}</span>
               <Button
                 variant="outline"
                 className="font-space"

@@ -7,6 +7,7 @@ COPY . .
 RUN go build -o repowipe
 
 FROM alpine:latest
+RUN apk add --no-cache git ca-certificates
 WORKDIR /app
 COPY --from=builder /app/repowipe ./
 EXPOSE 8080

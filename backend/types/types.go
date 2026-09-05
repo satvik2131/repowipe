@@ -10,7 +10,7 @@ type RequestBodyAuth struct {
 	ClientSecret string `json:"client_secret"`
 	Code         string `json:"code"`
 	RedirectURI  string `json:"redirect_uri"`
-	CodeVerifier string `json:code_verifier`
+	CodeVerifier string `json:"code_verifier"`
 }
 
 type AccessTokenResponse struct {
@@ -49,6 +49,6 @@ type GitHubSearchResponse struct {
 type GitHubRepoList []GitHubRepo
 
 type GithubRepoDelete struct {
-	Repos    []string `json:repos`
-	Username string   `json:username`
+	Repos    []string `json:"repos"`
+	Username string   `json:"username"`
 }

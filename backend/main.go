@@ -5,16 +5,22 @@ import (
 	"os"
 	"repowipe/config"
 	"repowipe/routes"
+	"repowipe/services"
 	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
+	_ "repowipe/providers/bitbucket"
+	_ "repowipe/providers/github"
+	_ "repowipe/providers/gitlab"
 )
 
 func main() {
 	config.InitEnvVar()
 	config.InitRedis()
+	services.StartTransferWorker()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -26,10 +32,8 @@ func main() {
 
 	r := gin.Default()
 
-	// Build allowed origins from env var (comma-separated)
-	// e.g. ALLOWED_ORIGINS=http://localhost:3000,https://myapp.vercel.app
 	allowedOriginsEnv := os.Getenv("ALLOWED_ORIGINS")
-	allowedOrigins := []string{"http://localhost:3000"} // safe default
+	allowedOrigins := []string{"http://localhost:3000"}
 	if allowedOriginsEnv != "" {
 		allowedOrigins = strings.Split(allowedOriginsEnv, ",")
 	}
@@ -43,8 +47,6 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Frontend is deployed on Vercel — no static file serving needed here.
-	// All unmatched routes return 404 for unknown API paths.
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "endpoint not found"})
 	})
@@ -53,4 +55,3 @@ func main() {
 
 	r.Run(":" + port)
 }
-

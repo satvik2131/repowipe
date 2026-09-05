@@ -3,85 +3,165 @@ package controllers
 import (
 	"log"
 	"net/http"
-	"repowipe/services"
+	"repowipe/providers"
 	"repowipe/types"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// FetchAllRepos returns a paginated list of the authenticated user's repos.
-func FetchAllRepos(c *gin.Context) {
-	page := c.Query("page")
+// FetchProviderRepos lists repos for :provider.
+func FetchProviderRepos(c *gin.Context) {
+	providerName := types.Provider(c.Param("provider"))
+	if !providerName.Valid() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown provider"})
+		return
+	}
+	sessionID, _, ok := requireSession(c)
+	if !ok {
+		return
+	}
+	token, ok := requireProviderToken(c, sessionID, providerName)
+	if !ok {
+		return
+	}
+	p, err := providers.Get(providerName)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	visibility := c.DefaultQuery("visibility", "all")
 	sort := c.DefaultQuery("sort", "updated")
 	direction := c.DefaultQuery("direction", "desc")
 
-	sessionID, err := c.Cookie("session_id")
+	repos, err := p.ListRepos(token, page, visibility, sort, direction)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		log.Printf("FetchProviderRepos: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	accessToken := getToken(c, sessionID)
-	if accessToken == "" {
-		return // getToken already wrote the 401 response
-	}
-	services.FetchRepos(c, accessToken, page, visibility, sort, direction)
+	c.JSON(http.StatusOK, repos)
 }
 
-// SearchRepos proxies a search query to the GitHub search API.
-func SearchRepos(c *gin.Context) {
-	sessionID, err := c.Cookie("session_id")
+// SearchProviderRepos searches repos for :provider.
+func SearchProviderRepos(c *gin.Context) {
+	providerName := types.Provider(c.Param("provider"))
+	if !providerName.Valid() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown provider"})
+		return
+	}
+	sessionID, doc, ok := requireSession(c)
+	if !ok {
+		return
+	}
+	token, ok := requireProviderToken(c, sessionID, providerName)
+	if !ok {
+		return
+	}
+	p, err := providers.Get(providerName)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	username := c.Query("username")
-	reponame := c.Query("reponame")
+	if username == "" {
+		if creds, ok := doc.Providers[providerName]; ok && creds.User.Login != "" {
+			username = creds.User.Login
+		}
+	}
+	reponame := c.Query("q")
+	if reponame == "" {
+		reponame = c.Query("reponame")
+	}
 	language := c.Query("language")
 	visibility := c.Query("visibility")
 	kind := c.Query("kind")
 	sort := c.DefaultQuery("sort", "updated")
 
-	accessToken := getToken(c, sessionID)
-	if accessToken == "" {
+	repos, err := p.SearchRepos(token, username, reponame, language, visibility, kind, sort)
+	if err != nil {
+		log.Printf("SearchProviderRepos: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	services.SearchRepos(c, accessToken, username, reponame, language, visibility, kind, sort)
+	c.JSON(http.StatusOK, repos)
 }
 
-// DeleteRepos deletes each repo in the request body for the authenticated user.
-func DeleteRepos(c *gin.Context) {
-	sessionID, err := c.Cookie("session_id")
+// DeleteProviderRepos deletes repos on :provider.
+func DeleteProviderRepos(c *gin.Context) {
+	providerName := types.Provider(c.Param("provider"))
+	if !providerName.Valid() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown provider"})
+		return
+	}
+	sessionID, doc, ok := requireSession(c)
+	if !ok {
+		return
+	}
+	token, ok := requireProviderToken(c, sessionID, providerName)
+	if !ok {
+		return
+	}
+	p, err := providers.Get(providerName)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	accessToken := getToken(c, sessionID)
-	if accessToken == "" {
-		return
-	}
-
-	var deleteRepoData types.GithubRepoDelete
-	if err := c.ShouldBindJSON(&deleteRepoData); err != nil {
-		log.Println("DeleteRepos: invalid payload:", err)
+	var body types.RepoDeleteRequest
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	var notFoundRepos []string
-	for _, repo := range deleteRepoData.Repos {
-		if err := services.DeleteRepos(c, accessToken, repo, deleteRepoData.Username); err != nil {
-			log.Println("DeleteRepos: repo not found:", err)
-			notFoundRepos = append(notFoundRepos, err.Error())
+	owner := body.Username
+	if owner == "" {
+		if creds, ok := doc.Providers[providerName]; ok {
+			owner = creds.User.Login
 		}
 	}
+	if owner == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username required"})
+		return
+	}
 
-	if len(notFoundRepos) > 0 {
-		c.JSON(http.StatusNotFound, notFoundRepos)
+	var notFound []string
+	for _, repo := range body.Repos {
+		name := repo
+		repoOwner := owner
+		if strings.Contains(repo, "/") {
+			parts := strings.SplitN(repo, "/", 2)
+			repoOwner, name = parts[0], parts[1]
+		}
+		if err := p.DeleteRepo(token, repoOwner, name); err != nil {
+			log.Printf("DeleteProviderRepos: %v", err)
+			notFound = append(notFound, name)
+		}
+	}
+	if len(notFound) > 0 {
+		c.JSON(http.StatusNotFound, notFound)
 		return
 	}
 	c.JSON(http.StatusOK, "Repos Deleted")
+}
+
+// Legacy GitHub routes — delegate to provider-scoped handlers.
+
+func FetchAllRepos(c *gin.Context) {
+	c.Params = append(c.Params, gin.Param{Key: "provider", Value: "github"})
+	FetchProviderRepos(c)
+}
+
+func SearchRepos(c *gin.Context) {
+	c.Params = append(c.Params, gin.Param{Key: "provider", Value: "github"})
+	SearchProviderRepos(c)
+}
+
+func DeleteRepos(c *gin.Context) {
+	c.Params = append(c.Params, gin.Param{Key: "provider", Value: "github"})
+	DeleteProviderRepos(c)
 }

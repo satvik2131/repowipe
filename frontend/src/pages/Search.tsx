@@ -29,6 +29,14 @@ import { useAppStore } from "@/store/useAppStore";
 import { useShallow } from "zustand/react/shallow";
 import { COMMON_LANGUAGES, languageColor } from "@/lib/languageColors";
 import { cn } from "@/lib/utils";
+import { ConnectionsPanel } from "@/components/ConnectionsPanel";
+import { TransferPanel } from "@/components/TransferPanel";
+
+const PROVIDER_LABEL: Record<Provider, string> = {
+  github: "GitHub",
+  gitlab: "GitLab",
+  bitbucket: "Bitbucket",
+};
 
 const DEFAULT_FILTERS: RepoListFilters = {
   visibility: "all",
@@ -60,22 +68,32 @@ const Search = () => {
     deleteRepos,
     user,
     isLoading,
+    activeProvider,
+    setActiveProvider,
+    connections,
   } = useAppStore(
-    useShallow((state) => ({
-      fetchRepos: state.fetchRepos,
-      findRepos: state.findRepos,
-      setPage: state.setPage,
-      deleteRepos: state.deleteRepos,
-      searchedRepos: state.searchedRepos,
-      allRepos: state.allRepos,
-      user: state.user,
-      isLoading: state.isLoading,
-      repoCount: state.user
-        ? state.user.public_repos + (state.user.total_private_repos ?? 0)
-        : 0,
-      page: state.page,
-      username: state.user?.login ?? "",
-    })),
+    useShallow((state) => {
+      const activeUser =
+        state.connections[state.activeProvider] ?? state.user;
+      return {
+        fetchRepos: state.fetchRepos,
+        findRepos: state.findRepos,
+        setPage: state.setPage,
+        deleteRepos: state.deleteRepos,
+        searchedRepos: state.searchedRepos,
+        allRepos: state.allRepos,
+        user: state.user,
+        isLoading: state.isLoading,
+        activeProvider: state.activeProvider,
+        setActiveProvider: state.setActiveProvider,
+        connections: state.connections,
+        repoCount: activeUser
+          ? activeUser.public_repos + (activeUser.total_private_repos ?? 0)
+          : 0,
+        page: state.page,
+        username: activeUser?.login ?? "",
+      };
+    }),
   );
 
   const usesSearchApi =
@@ -108,7 +126,7 @@ const Search = () => {
     if (!user) return;
     if (usesSearchApi) return;
     fetchRepos(listFilters);
-  }, [user, page, listFilters, usesSearchApi]);
+  }, [user, page, listFilters, usesSearchApi, activeProvider]);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -122,12 +140,12 @@ const Search = () => {
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [user, searchTerm, filters, usesSearchApi]);
+  }, [user, searchTerm, filters, usesSearchApi, activeProvider]);
 
   // Clear selection when the visible list changes.
   useEffect(() => {
     setSelectedRepos([]);
-  }, [page, searchTerm, filters]);
+  }, [page, searchTerm, filters, activeProvider]);
 
   if (!user) {
     return null;
@@ -165,11 +183,13 @@ const Search = () => {
     );
   };
 
+  const repoKey = (repo: Repos) => repo.full_name || repo.name;
+
   const handleSelectAll = () => {
     if (selectedRepos.length === repos.length) {
       setSelectedRepos([]);
     } else {
-      setSelectedRepos(repos.map((repo) => repo.name));
+      setSelectedRepos(repos.map((repo) => repoKey(repo)));
     }
   };
 
@@ -246,15 +266,15 @@ const Search = () => {
       <main className="flex-1 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
                 <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
                   Search & Manage Repos
                 </h1>
                 <p className="mt-2 text-muted-foreground max-w-xl">
-                  Filter, select, and bulk-delete repositories from your GitHub
-                  account.
+                  Filter, wipe, or transfer repositories across GitHub, GitLab,
+                  and Bitbucket.
                 </p>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -263,6 +283,33 @@ const Search = () => {
                   {repoCount} total · showing {repos.length}
                 </span>
               </div>
+            </div>
+
+            <ConnectionsPanel />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground mr-1">
+                Source
+              </span>
+              {(["github", "gitlab", "bitbucket"] as Provider[]).map((p) => {
+                const linked = Boolean(connections[p]);
+                return (
+                  <Button
+                    key={p}
+                    size="sm"
+                    variant={activeProvider === p ? "default" : "outline"}
+                    disabled={!linked}
+                    onClick={() => setActiveProvider(p)}
+                    title={
+                      linked
+                        ? `Browse ${PROVIDER_LABEL[p]}`
+                        : `Connect ${PROVIDER_LABEL[p]} first`
+                    }
+                  >
+                    {PROVIDER_LABEL[p]}
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
@@ -421,40 +468,43 @@ const Search = () => {
           </Card>
 
           {/* Actions bar */}
-          <div className="sticky top-20 z-20 mb-4 rounded-lg border border-border/80 bg-background/90 backdrop-blur-md px-4 py-3 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 shadow-card">
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                {repos.length > 0 && selectedRepos.length === repos.length
-                  ? "Deselect All"
-                  : "Select All"}
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                <span className="text-foreground font-medium">
-                  {selectedRepos.length}
-                </span>{" "}
-                of {repos.length} selected
-              </span>
-              {isLoading && (
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              )}
-            </div>
+          <div className="sticky top-20 z-20 mb-4 rounded-lg border border-border/80 bg-background/90 backdrop-blur-md px-4 py-3 space-y-3 shadow-card">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                  {repos.length > 0 && selectedRepos.length === repos.length
+                    ? "Deselect All"
+                    : "Select All"}
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  <span className="text-foreground font-medium">
+                    {selectedRepos.length}
+                  </span>{" "}
+                  of {repos.length} selected on {PROVIDER_LABEL[activeProvider]}
+                </span>
+                {isLoading && (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                )}
+              </div>
 
-            <div className="flex items-center gap-2">
-              <ConfirmDialog
-                open={showDialog}
-                onOpenChange={setShowDialog}
-                onConfirm={onConfirm}
-              />
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-                disabled={selectedRepos.length === 0}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Selected ({selectedRepos.length})
-              </Button>
+              <div className="flex items-center gap-2">
+                <ConfirmDialog
+                  open={showDialog}
+                  onOpenChange={setShowDialog}
+                  onConfirm={onConfirm}
+                />
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  disabled={selectedRepos.length === 0}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Wipe Selected ({selectedRepos.length})
+                </Button>
+              </div>
             </div>
+            <TransferPanel selectedRepos={selectedRepos} />
           </div>
 
           {/* Repository list */}
@@ -488,7 +538,8 @@ const Search = () => {
               </Card>
             ) : (
               repos.map((repo) => {
-                const selected = selectedRepos.includes(repo.name);
+                const key = repo.full_name || repo.name;
+                const selected = selectedRepos.includes(key);
                 return (
                   <Card
                     key={repo.id}
@@ -500,7 +551,7 @@ const Search = () => {
                     <div className="flex items-start gap-3 sm:gap-4">
                       <Checkbox
                         checked={selected}
-                        onCheckedChange={() => handleSelectRepo(repo.name)}
+                        onCheckedChange={() => handleSelectRepo(key)}
                         className="mt-1"
                         aria-label={`Select ${repo.name}`}
                       />

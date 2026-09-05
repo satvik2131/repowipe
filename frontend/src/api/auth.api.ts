@@ -1,61 +1,68 @@
 import { AxiosResponse } from "axios";
 import axiosClient from "./axiosClient";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-/** Payload sent to the backend token-exchange endpoint. */
-type TokenExchangePayload = {
-  code: string;
-  state: string;
-};
-
-/** Response from the backend token-exchange endpoint. */
 type AuthCallbackResponse = {
   user: User;
+  connections?: ConnectionsResponse;
+  mode?: "login" | "link";
 };
 
-// ── API calls ─────────────────────────────────────────────────────────────────
-
-/**
- * Fetches the GitHub OAuth authorization URL from the backend.
- * The backend includes client_id, redirect_uri, scope, and a CSRF state token —
- * none of these are handled by the frontend anymore.
- */
-const getGithubLoginUrl = async (): Promise<string> => {
-  const resp = await axiosClient.get<{ url: string }>("/auth/github/login");
+const getProviderLoginUrl = async (
+  provider: Provider,
+  mode: "login" | "link" = "login"
+): Promise<string> => {
+  const resp = await axiosClient.get<{ url: string }>(
+    `/auth/${provider}/login`,
+    { params: { mode } }
+  );
   return resp.data.url;
 };
 
-/**
- * Exchanges the temporary GitHub OAuth code for a session.
- * The backend handles the client_secret and access-token exchange.
- */
+/** @deprecated use getProviderLoginUrl("github") */
+const getGithubLoginUrl = async (): Promise<string> =>
+  getProviderLoginUrl("github", "login");
+
 const authenticateUser = async (
+  provider: Provider,
   code: string,
-  state: string
+  state: string,
+  mode: "login" | "link" = "login"
 ): Promise<AxiosResponse<AuthCallbackResponse>> => {
-  const payload: TokenExchangePayload = { code, state };
-  const resp = await axiosClient.post<AuthCallbackResponse>(
-    "/auth/github/callback",
-    JSON.stringify(payload)
+  return axiosClient.post<AuthCallbackResponse>(
+    `/auth/${provider}/callback`,
+    { code, state, mode }
   );
-  return resp;
 };
 
-/**
- * Validates whether the current session cookie is still active.
- */
 const validateUser = async (): Promise<boolean> => {
   const resp = await axiosClient.get<boolean>("/verify/user");
   return resp.data;
 };
 
-/**
- * Logs out: backend clears Redis session, revokes the GitHub token, and
- * expires the session cookie.
- */
 const logoutUser = async (): Promise<void> => {
   await axiosClient.post("/auth/logout");
 };
 
-export { getGithubLoginUrl, authenticateUser, validateUser, logoutUser };
+const getConnections = async (): Promise<ConnectionsResponse> => {
+  const resp = await axiosClient.get<ConnectionsResponse>("/auth/connections");
+  return resp.data;
+};
+
+const unlinkProvider = async (
+  provider: Provider
+): Promise<ConnectionsResponse> => {
+  const resp = await axiosClient.delete<ConnectionsResponse>(
+    `/auth/${provider}`
+  );
+  return resp.data;
+};
+
+export {
+  getProviderLoginUrl,
+  getGithubLoginUrl,
+  authenticateUser,
+  validateUser,
+  logoutUser,
+  getConnections,
+  unlinkProvider,
+};

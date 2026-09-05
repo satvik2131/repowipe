@@ -1,12 +1,8 @@
 import { AxiosResponse } from "axios";
 import axiosClient from "./axiosClient";
 
-// ── API calls ─────────────────────────────────────────────────────────────────
-
-/**
- * Fetches a paginated list of the authenticated user's repositories.
- */
 const listAllRepos = async (
+  provider: Provider,
   page: number,
   filters?: Pick<RepoListFilters, "visibility" | "sort" | "direction">
 ): Promise<AxiosResponse<Repos[]>> => {
@@ -16,14 +12,11 @@ const listAllRepos = async (
     sort: filters?.sort === "stars" ? "updated" : (filters?.sort ?? "updated"),
     direction: filters?.direction ?? "desc",
   });
-  const resp = await axiosClient.post(`/fetch/repos?${params.toString()}`);
-  return resp;
+  return axiosClient.post(`/${provider}/repos?${params.toString()}`);
 };
 
-/**
- * Searches GitHub repositories for the given username with optional filters.
- */
 const searchRepos = async (
+  provider: Provider,
   username: string,
   reponame: string,
   filters?: Partial<RepoListFilters>
@@ -47,20 +40,17 @@ const searchRepos = async (
     params.set("sort", searchSort);
   }
 
-  const resp = await axiosClient.get(`/search/repo?${params.toString()}`);
+  const resp = await axiosClient.get(`/${provider}/search?${params.toString()}`);
   return resp?.data ?? [];
 };
 
-/**
- * Deletes the specified repositories for the authenticated user.
- */
 const deleteRepos = async (
+  provider: Provider,
   deleteRepoData: DeleteRepoData
 ): Promise<AxiosResponse> => {
-  const resp = await axiosClient.delete("/delete/repos", {
+  return axiosClient.delete(`/${provider}/repos`, {
     data: deleteRepoData,
   });
-  return resp;
 };
 
 export { listAllRepos, searchRepos, deleteRepos };

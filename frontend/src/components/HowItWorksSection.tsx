@@ -2,19 +2,19 @@ import { Trash2, List, CheckCircle } from "lucide-react";
 
 const steps = [
   {
-    icon: <Trash2 className="h-8 w-8" />,
-    title: "1. Select Repositories",
-    description: "Connect your GitHub account and easily select the repositories you want to remove."
+    icon: <List className="h-8 w-8" />,
+    title: "1. Connect accounts",
+    description: "Log in with one provider, then link GitHub, GitLab, and Bitbucket as needed."
   },
   {
-    icon: <List className="h-8 w-8" />,
-    title: "2. Review & Confirm", 
-    description: "Double-check your selection. There's no going back after this step, so be sure!"
+    icon: <Trash2 className="h-8 w-8" />,
+    title: "2. Wipe or transfer",
+    description: "Pick a source host, select repos, then bulk-delete or mirror them to another host."
   },
   {
     icon: <CheckCircle className="h-8 w-8" />,
-    title: "3. Wipe Clean",
-    description: "Confirm the deletion, and watch as RepoWipe securely removes the repositories for you."
+    title: "3. Track progress",
+    description: "Transfers report succeeded, partial, or failed per repo with warnings when metadata can't move."
   }
 ];
 
@@ -27,7 +27,7 @@ export const HowItWorksSection = () => {
             How It Works
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto font-space">
-            A straightforward, three-step process to a cleaner GitHub profile.
+            A straightforward path to a cleaner profile — or a new home for your repos.
           </p>
         </div>
         

@@ -32,8 +32,8 @@ export const ConfirmDialog = ({
           </AlertDialog.Title>
 
           <AlertDialog.Description className="mt-2 text-sm text-muted-foreground">
-            This action cannot be undone. This will permanently delete your
-            Repositories.
+            This action cannot be undone. This will permanently wipe the selected
+            repositories on the active source provider.
           </AlertDialog.Description>
 
           <div className="flex gap-2 justify-end mt-4">

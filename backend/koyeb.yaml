@@ -19,23 +19,35 @@
 #     --env APP_ENV=production \
 #     --env GIN_MODE=release \
 #     --env PORT=8080 \
-#     --env FRONTEND_URL=https://<your-site>.vercel.app \
-#     --env ALLOWED_ORIGINS=https://<your-site>.vercel.app \
+#     --env FRONTEND_URL=https://repowipe.site \
+#     --env ALLOWED_ORIGINS=https://repowipe.site,https://repowipe.vercel.app \
 #     --env GITHUB_CLIENT_ID=@github-client-id \
 #     --env GITHUB_CLIENT_SECRET=@github-client-secret \
+#     --env GITLAB_CLIENT_ID=@gitlab-client-id \
+#     --env GITLAB_CLIENT_SECRET=@gitlab-client-secret \
+#     --env BITBUCKET_CLIENT_ID=@bitbucket-client-id \
+#     --env BITBUCKET_CLIENT_SECRET=@bitbucket-client-secret \
 #     --env REDIS_ADDRESS=@redis-address \
 #     --env REDIS_PASSWORD=@redis-password
 #
 # Required env vars (set as Koyeb secrets where sensitive):
-#   APP_ENV             production
-#   GIN_MODE            release
-#   PORT                8080
-#   FRONTEND_URL        https://<your-site>.vercel.app
-#   ALLOWED_ORIGINS     comma-separated list of allowed frontend origins
-#   GITHUB_CLIENT_ID    GitHub OAuth App client id
-#   GITHUB_CLIENT_SECRET GitHub OAuth App client secret
-#   REDIS_ADDRESS       host:port (e.g. xxx.upstash.io:6379)
-#   REDIS_PASSWORD      Redis password (empty if none)
-#   COOKIE_DOMAIN       leave unset for cross-site (Vercel + Koyeb) deploys;
-#                       set only if frontend and backend share a registrable
-#                       domain (e.g. .repowipe.site)
+#   APP_ENV                  production
+#   GIN_MODE                 release
+#   PORT                     8080
+#   FRONTEND_URL             https://repowipe.site
+#   ALLOWED_ORIGINS          comma-separated frontend origins
+#   GITHUB_CLIENT_ID         GitHub OAuth App client id
+#   GITHUB_CLIENT_SECRET     GitHub OAuth App client secret
+#   GITLAB_CLIENT_ID         GitLab.com OAuth application id
+#   GITLAB_CLIENT_SECRET     GitLab.com OAuth application secret
+#   BITBUCKET_CLIENT_ID      Bitbucket Cloud OAuth consumer key
+#   BITBUCKET_CLIENT_SECRET  Bitbucket Cloud OAuth consumer secret
+#   REDIS_ADDRESS            host:port
+#   REDIS_PASSWORD           Redis password (empty if none)
+#   COOKIE_DOMAIN            leave unset for cross-site deploys
+#
+# OAuth callback URL (register on each provider):
+#   https://repowipe.site/auth
+#   (authorize requests append ?provider=github|gitlab|bitbucket&mode=login|link)
+#
+# Image includes git for mirror clone/push during transfers.
